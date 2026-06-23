@@ -1,0 +1,50 @@
+{
+  "name": "whatsapp-toolkit-ai",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "build": "expo export",
+    "serve": "npx serve dist",
+    "typecheck": "tsc --noEmit",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write ."
+  },
+  "dependencies": {
+    "@expo-google-fonts/inter": "^0.2.3",
+    "@expo/vector-icons": "^14.1.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@tanstack/react-query": "^5.90.21",
+    "expo": "~54.0.0",
+    "expo-av": "~15.1.0",
+    "expo-clipboard": "~7.1.0",
+    "expo-font": "~13.3.0",
+    "expo-haptics": "~14.1.0",
+    "expo-linking": "~7.1.0",
+    "expo-router": "~6.0.17",
+    "expo-sharing": "~13.1.0",
+    "expo-symbols": "~0.1.4",
+    "expo-web-browser": "~14.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-keyboard-aware-scroll-view": "^0.9.5",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "^5.5.0",
+    "react-native-screens": "~4.16.0",
+    "react-native-web": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/react": "~19.0.0",
+    "prettier": "^3.8.3",
+    "typescript": "~5.9.3"
+  },
+  "prettier": {
+    "semi": true,
+    "singleQuote": false,
+    "trailingComma": "all",
+    "printWidth": 100,
+    "tabWidth": 2
+  }
+}

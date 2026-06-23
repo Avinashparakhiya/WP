@@ -1,0 +1,111 @@
+export interface QuoteCategory {
+  id: string;
+  label: string;
+  emoji: string;
+  quotes: string[];
+}
+
+export const QUOTE_CATEGORIES: QuoteCategory[] = [
+  {
+    id: "motivation",
+    label: "Motivation",
+    emoji: "\u{1F525}",
+    quotes: [
+      "The only way to do great work is to love what you do. — Steve Jobs",
+      "Success is not final, failure is not fatal: it is the courage to continue that counts. — Winston Churchill",
+      "Don't watch the clock; do what it does. Keep going. — Sam Levenson",
+      "Believe you can and you're halfway there. — Theodore Roosevelt",
+      "The future belongs to those who believe in the beauty of their dreams. — Eleanor Roosevelt",
+      "It does not matter how slowly you go as long as you do not stop. — Confucius",
+      "Everything you've ever wanted is on the other side of fear. — George Addair",
+      "You are never too old to set another goal or to dream a new dream. — C.S. Lewis",
+      "Hardships often prepare ordinary people for an extraordinary destiny. — C.S. Lewis",
+      "The best time to plant a tree was 20 years ago. The second best time is now. — Chinese Proverb",
+    ],
+  },
+  {
+    id: "business",
+    label: "Business",
+    emoji: "\u{1F4BC}",
+    quotes: [
+      "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do great work. — Steve Jobs",
+      "Innovation distinguishes between a leader and a follower. — Steve Jobs",
+      "The secret of getting ahead is getting started. — Mark Twain",
+      "If you're not failing, you're not growing. — Unknown",
+      "Opportunities don't happen. You create them. — Chris Grosser",
+      "Great things in business are never done by one person; they're done by a team of people. — Steve Jobs",
+      "Business is about being the best, not being the biggest. — Unknown",
+      "A brand is a voice and a product is a souvenir. — Lisa Gansky",
+      "Success usually comes to those who are too busy to be looking for it. — Henry David Thoreau",
+      "The customer's perception is your reality. — Kate Zabriskie",
+    ],
+  },
+  {
+    id: "love",
+    label: "Love",
+    emoji: "\u{2764}\u{FE0F}",
+    quotes: [
+      "The best thing to hold onto in life is each other. — Audrey Hepburn",
+      "Love is not about how many days, months, or years you have been together. Love is about how much you love each other every single day.",
+      "Where there is love there is life. — Mahatma Gandhi",
+      "Being deeply loved by someone gives you strength, while loving someone deeply gives you courage. — Lao Tzu",
+      "The greatest thing you'll ever learn is just to love and be loved in return. — Eden Ahbez",
+      "Love recognizes no barriers. It jumps hurdles, leaps fences, penetrates walls to arrive at its destination full of hope. — Maya Angelou",
+      "To love and be loved is to feel the sun from both sides. — David Viscott",
+      "Love all, trust a few, do wrong to none. — William Shakespeare",
+      "We accept the love we think we deserve. — Stephen Chbosky",
+      "You know you're in love when you can't fall asleep because reality is finally better than your dreams. — Dr. Seuss",
+    ],
+  },
+  {
+    id: "friendship",
+    label: "Friendship",
+    emoji: "\u{1F91D}",
+    quotes: [
+      "A real friend is one who walks in when the rest of the world walks out. — Walter Winchell",
+      "Friendship is born at that moment when one person says to another, 'What! You too?' — C.S. Lewis",
+      "True friendship comes when the silence between two people is comfortable. — David Tyson",
+      "Friends are the family you choose. — Jess C. Scott",
+      "A friend is someone who gives you total freedom to be yourself. — Jim Morrison",
+      "The only way to have a friend is to be one. — Ralph Waldo Emerson",
+      "Friendship is the only cement that will ever hold the world together. — Woodrow Wilson",
+      "A true friend is someone who is there for you when they'd rather be anywhere else. — Len Wein",
+      "Life is partly what we make it, and partly what it is made by the friends we choose. — Tennessee Williams",
+      "There is nothing on this earth more to be prized than true friendship. — Thomas Aquinas",
+    ],
+  },
+  {
+    id: "success",
+    label: "Success",
+    emoji: "\u{1F3C6}",
+    quotes: [
+      "Success is walking from failure to failure with no loss of enthusiasm. — Winston Churchill",
+      "The road to success and the road to failure are almost exactly the same. — Colin R. Davis",
+      "Success is not the key to happiness. Happiness is the key to success. — Albert Schweitzer",
+      "Try not to become a person of success, but rather try to become a person of value. — Albert Einstein",
+      "I find that the harder I work, the more luck I seem to have. — Thomas Jefferson",
+      "Success usually comes to those who are too busy looking for it. — Henry David Thoreau",
+      "Don't be afraid to give up the good to go for the great. — John D. Rockefeller",
+      "I never dreamed about success. I worked for it. — Estée Lauder",
+      "If you want to achieve excellence, you can get there today. As of this second, quit doing less-than-excellent work. — Thomas J. Watson",
+      "The only place where success comes before work is in the dictionary. — Vidal Sassoon",
+    ],
+  },
+  {
+    id: "festival",
+    label: "Festival",
+    emoji: "\u{1F389}",
+    quotes: [
+      "Wishing you joy, love, and laughter this holiday season!",
+      "May the festival of lights brighten your life with happiness and prosperity.",
+      "Celebrate the moments that matter most with the people you love.",
+      "Let the festive spirit fill your heart with warmth and joy.",
+      "May every festival bring new hope and new beginnings to your life.",
+      "Sending you warm wishes and endless blessings this festive season.",
+      "Life is a celebration. Wake up and celebrate it every single day!",
+      "May the colors of celebration paint your life with joy and happiness.",
+      "Festivals are the time to create memories that last a lifetime.",
+      "Wishing you a season filled with love, laughter, and togetherness.",
+    ],
+  },
+];
