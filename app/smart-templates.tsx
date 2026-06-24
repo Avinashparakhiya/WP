@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { Header } from "../components/Header";
+import { router } from "expo-router";
 import { ResultCard } from "../components/ResultCard";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { AiErrorBox } from "../components/AiErrorBox";
@@ -18,7 +18,7 @@ import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
 import { addHistory } from "../lib/storage";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 import { SMART_TEMPLATE_CATEGORIES } from "../constants/smartTemplates";
 
 export default function SmartTemplatesScreen() {
@@ -53,10 +53,33 @@ export default function SmartTemplatesScreen() {
       style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="Smart Templates" subtitle="Industry-specific templates" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Smart Templates</Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -166,6 +189,28 @@ export default function SmartTemplatesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
   section: {
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.xl,

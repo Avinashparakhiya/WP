@@ -1,13 +1,30 @@
 import React, { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { Header } from "../components/Header";
 import { useColors } from "../lib/useColors";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import {
+  RADIUS,
+  RADIUS_SM,
+  SPACING,
+  CONTENT_BOTTOM_PADDING,
+  HEADER_PADDING_TOP,
+} from "../constants/layout";
 import { FANCY_TEXT_STYLES } from "../constants/fancyText";
+
+const GREEN = "#25D366";
 
 export default function FancyTextScreen() {
   const colors = useColors();
@@ -15,10 +32,10 @@ export default function FancyTextScreen() {
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
   const results = useMemo(() => {
-    if (!input.trim()) return [];
+    const textToConvert = input.trim() ? input.trim() : "Sample Text";
     return FANCY_TEXT_STYLES.map((style, idx) => ({
       name: style.name,
-      text: style.convert(input),
+      text: style.convert(textToConvert),
       index: idx,
     }));
   }, [input]);
@@ -31,148 +48,188 @@ export default function FancyTextScreen() {
   };
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
-      showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled"
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="Fancy Text" subtitle="30+ Unicode text styles" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Fancy Text</Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
 
-      <View style={styles.inputSection}>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: colors.card,
-              color: colors.foreground,
-              borderColor: colors.inputBorder,
-            },
-          ]}
-          placeholder="Type your text here..."
-          placeholderTextColor={colors.mutedForeground}
-          value={input}
-          onChangeText={setInput}
-          returnKeyType="done"
-        />
-      </View>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── Input Section ── */}
+        <View style={styles.inputSection}>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: colors.card,
+                color: colors.foreground,
+                borderColor: colors.inputBorder,
+              },
+            ]}
+            placeholder="Type your text here..."
+            placeholderTextColor={colors.mutedForeground}
+            value={input}
+            onChangeText={setInput}
+            returnKeyType="done"
+          />
+        </View>
 
-      {results.length > 0 ? (
+        {/* ── Results Section (Always Visible) ── */}
         <View style={styles.resultsSection}>
           {results.map((item) => (
-            <Pressable
+            <View
               key={item.index}
               style={[
                 styles.resultCard,
                 {
                   backgroundColor: colors.card,
-                  borderColor: copiedIdx === item.index ? colors.primary : colors.border,
+                  borderColor: colors.border,
                 },
               ]}
-              onPress={() => handleCopy(item.text, item.index)}
-              onLongPress={() => handleCopy(item.text, item.index)}
             >
-              <View style={styles.resultHeader}>
+              <View style={styles.textContainer}>
                 <Text style={[styles.styleName, { color: colors.mutedForeground }]}>
                   {item.name}
                 </Text>
-                <View style={styles.copyIndicator}>
-                  <Feather
-                    name={copiedIdx === item.index ? "check" : "copy"}
-                    size={14}
-                    color={copiedIdx === item.index ? colors.primary : colors.mutedForeground}
-                  />
-                  <Text
-                    style={[
-                      styles.copyText,
-                      {
-                        color: copiedIdx === item.index ? colors.primary : colors.mutedForeground,
-                      },
-                    ]}
-                  >
-                    {copiedIdx === item.index ? "Copied!" : "Tap to copy"}
-                  </Text>
-                </View>
+                <Text style={[styles.resultText, { color: colors.foreground }]} numberOfLines={2}>
+                  {item.text}
+                </Text>
               </View>
-              <Text style={[styles.resultText, { color: colors.foreground }]} numberOfLines={2}>
-                {item.text}
-              </Text>
-            </Pressable>
+
+              <Pressable
+                style={[
+                  styles.copyBtn,
+                  {
+                    backgroundColor:
+                      copiedIdx === item.index ? `${colors.primary}20` : `${colors.primary}12`,
+                  },
+                ]}
+                onPress={() => handleCopy(item.text, item.index)}
+              >
+                <Feather
+                  name={copiedIdx === item.index ? "check" : "copy"}
+                  size={18}
+                  color={colors.primary}
+                />
+              </Pressable>
+            </View>
           ))}
         </View>
-      ) : (
-        <View style={styles.placeholder}>
-          <Feather name="type" size={40} color={colors.mutedForeground} />
-          <Text style={[styles.placeholderText, { color: colors.mutedForeground }]}>
-            Type something to see it in different styles
-          </Text>
-        </View>
-      )}
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  inputSection: { paddingHorizontal: SPACING.lg, marginBottom: SPACING.md },
+  scroll: { flex: 1 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+
+  /* Input Section */
+  inputSection: {
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.md,
+  },
   input: {
     borderRadius: RADIUS,
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.md,
-    fontSize: 16,
+    height: 48,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
   },
+
+  /* Results Section */
   resultsSection: {
     paddingHorizontal: SPACING.lg,
     gap: SPACING.sm,
   },
   resultCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderRadius: RADIUS,
     borderWidth: 1,
     padding: SPACING.md,
-    gap: SPACING.sm,
+    gap: SPACING.md,
   },
-  resultHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+  textContainer: {
+    flex: 1,
+    gap: 4,
   },
   styleName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
     textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  copyIndicator: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  copyText: {
-    fontSize: 11,
-    fontFamily: "Inter_500Medium",
+    letterSpacing: 1,
   },
   resultText: {
     fontSize: 16,
     fontFamily: "Inter_400Regular",
     lineHeight: 22,
   },
-  placeholder: {
+  copyBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.xxxl,
-    gap: SPACING.md,
-  },
-  placeholderText: {
-    fontSize: 14,
-    fontFamily: "Inter_400Regular",
   },
 });

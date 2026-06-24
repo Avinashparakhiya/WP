@@ -15,7 +15,7 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Header } from "../../components/Header";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
-import { useColors } from "../../lib/useColors";
+import { useColors, useTheme, type ThemePreference } from "../../lib/useColors";
 import { CONTENT_BOTTOM_PADDING, RADIUS, RADIUS_SM, SPACING } from "../../constants/layout";
 import {
   getProvider,
@@ -125,6 +125,7 @@ const GREEN_DARK = "#128C7E";
 
 export default function SettingsScreen() {
   const colors = useColors();
+  const { themePreference, setThemePreference } = useTheme();
   const [provider, setProviderState] = useState<AIProvider>("gemini");
   const [keys, setKeys] = useState<Record<string, string>>({});
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
@@ -214,22 +215,64 @@ export default function SettingsScreen() {
         )}
       </SafeAreaInsetsContext.Consumer>
 
-      {/* ── Upgrade to Premium Banner ── */}
+      {/* ── Theme Section ── */}
       <View style={styles.section}>
-        <Pressable
-          style={styles.premiumBanner}
-          onPress={() => {
-            /* future: premium flow */
-          }}
-        >
-          <View style={styles.premiumContent}>
-            <Text style={styles.premiumTitle}>Upgrade to Premium</Text>
-            <Text style={styles.premiumSubtitle}>Unlimited AI • No Ads • Premium Templates</Text>
-          </View>
-          <View style={styles.premiumIconWrap}>
-            <Feather name="star" size={24} color="#FFC107" />
-          </View>
-        </Pressable>
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>THEME</Text>
+        {(
+          [
+            { id: "system", name: "System Default", icon: "smartphone" },
+            { id: "dark", name: "Dark Mode", icon: "moon" },
+          ] as const
+        ).map((opt) => {
+          const isSelected = themePreference === opt.id;
+          return (
+            <Pressable
+              key={opt.id}
+              style={[
+                styles.providerCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: isSelected ? GREEN : colors.border,
+                  borderWidth: isSelected ? 2 : 1,
+                },
+              ]}
+              onPress={async () => {
+                await setThemePreference(opt.id);
+                Haptics.selectionAsync();
+              }}
+            >
+              <View style={styles.providerRow}>
+                {/* Radio Button */}
+                <View
+                  style={[
+                    styles.radioOuter,
+                    {
+                      borderColor: isSelected ? GREEN : colors.border,
+                    },
+                  ]}
+                >
+                  {isSelected ? (
+                    <View style={[styles.radioInner, { backgroundColor: GREEN }]} />
+                  ) : null}
+                </View>
+
+                {/* Theme Info */}
+                <View style={styles.providerInfo}>
+                  <View style={[styles.providerNameRow, { gap: 8 }]}>
+                    <Feather
+                      name={opt.icon}
+                      size={16}
+                      color={isSelected ? GREEN : colors.mutedForeground}
+                    />
+                    <Text style={[styles.providerName, { color: colors.foreground }]}>
+                      {opt.name}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </Pressable>
+          );
+        })}
       </View>
 
       {/* ── AI Provider Section ── */}
@@ -521,44 +564,6 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 1.2,
     marginBottom: SPACING.md,
-  },
-
-  /* ── Premium Banner ── */
-  premiumBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: GREEN,
-    borderRadius: RADIUS,
-    paddingVertical: SPACING.lg,
-    paddingHorizontal: SPACING.lg,
-    shadowColor: GREEN,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  premiumContent: {
-    flex: 1,
-  },
-  premiumTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    fontFamily: "Inter_700Bold",
-    color: "#FFFFFF",
-  },
-  premiumSubtitle: {
-    fontSize: 12,
-    fontFamily: "Inter_400Regular",
-    color: "rgba(255,255,255,0.85)",
-    marginTop: 3,
-  },
-  premiumIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    alignItems: "center",
-    justifyContent: "center",
   },
 
   /* ── Provider Card ── */
