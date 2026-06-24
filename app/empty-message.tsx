@@ -1,12 +1,20 @@
 import React, { useState, useCallback } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import * as Haptics from "expo-haptics";
-import { Header } from "../components/Header";
 import { useColors } from "../lib/useColors";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 import { addHistory } from "../lib/storage";
 
 interface InvisibleChar {
@@ -41,114 +49,171 @@ export default function EmptyMessageScreen() {
   }, []);
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
-      showsVerticalScrollIndicator={false}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="Empty Message" subtitle="Send invisible characters on WhatsApp" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Empty Message</Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
 
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-          SINGLE INVISIBLE CHARACTERS
-        </Text>
-        {INVISIBLE_CHARS.map((ic) => (
-          <Pressable
-            key={ic.name}
-            style={[
-              styles.charCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: copiedType === ic.name ? colors.primary : colors.border,
-              },
-            ]}
-            onPress={() => handleCopy(ic.name, ic.char, 1)}
-          >
-            <View style={styles.charInfo}>
-              <Feather name="eye-off" size={16} color={colors.primary} />
-              <View style={styles.charDetails}>
-                <Text style={[styles.charName, { color: colors.foreground }]}>{ic.name}</Text>
-                <Text style={[styles.charPreview, { color: colors.mutedForeground }]}>
-                  Preview: |{ic.char}| ({ic.length} char)
-                </Text>
-              </View>
-            </View>
-            <View style={styles.copyBadge}>
-              <Feather
-                name={copiedType === ic.name ? "check" : "copy"}
-                size={14}
-                color={copiedType === ic.name ? colors.primary : colors.mutedForeground}
-              />
-            </View>
-          </Pressable>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>CUSTOM LENGTH</Text>
-        <View style={styles.customRow}>
-          {[50, 100, 500, 1000, 5000].map((count) => (
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+            SINGLE INVISIBLE CHARACTERS
+          </Text>
+          {INVISIBLE_CHARS.map((ic) => (
             <Pressable
-              key={count}
+              key={ic.name}
               style={[
-                styles.countChip,
+                styles.charCard,
                 {
-                  backgroundColor: customCount === count ? `${colors.primary}20` : colors.card,
-                  borderColor: customCount === count ? colors.primary : colors.border,
+                  backgroundColor: colors.card,
+                  borderColor: copiedType === ic.name ? colors.primary : colors.border,
                 },
               ]}
-              onPress={() => setCustomCount(count)}
+              onPress={() => handleCopy(ic.name, ic.char, 1)}
             >
-              <Text
-                style={[
-                  styles.countChipText,
-                  {
-                    color: customCount === count ? colors.primary : colors.mutedForeground,
-                  },
-                ]}
-              >
-                {count}
-              </Text>
+              <View style={styles.charInfo}>
+                <Feather name="eye-off" size={16} color={colors.primary} />
+                <View style={styles.charDetails}>
+                  <Text style={[styles.charName, { color: colors.foreground }]}>{ic.name}</Text>
+                  <Text style={[styles.charPreview, { color: colors.mutedForeground }]}>
+                    Preview: |{ic.char}| ({ic.length} char)
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.copyBadge}>
+                <Feather
+                  name={copiedType === ic.name ? "check" : "copy"}
+                  size={14}
+                  color={copiedType === ic.name ? colors.primary : colors.mutedForeground}
+                />
+              </View>
             </Pressable>
           ))}
         </View>
-        <Pressable
-          style={[styles.generateBtn, { backgroundColor: colors.primary }]}
-          onPress={() => handleCopy(`Custom (${customCount})`, "\u200B", customCount)}
-        >
-          <Feather
-            name={copiedType?.includes("Custom") ? "check" : "copy"}
-            size={18}
-            color="#FFFFFF"
-          />
-          <Text style={styles.generateBtnText}>
-            {copiedType?.includes("Custom") ? "Copied!" : `Copy ${customCount} Invisible Chars`}
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+            CUSTOM LENGTH
           </Text>
-        </Pressable>
-        <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-          Uses Zero Width Space characters. They look blank but take up space.
-        </Text>
-      </View>
-    </ScrollView>
+          <View style={styles.customRow}>
+            {[50, 100, 500, 1000, 5000].map((count) => (
+              <Pressable
+                key={count}
+                style={[
+                  styles.countChip,
+                  {
+                    backgroundColor: customCount === count ? `${colors.primary}20` : colors.card,
+                    borderColor: customCount === count ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => setCustomCount(count)}
+              >
+                <Text
+                  style={[
+                    styles.countChipText,
+                    {
+                      color: customCount === count ? colors.primary : colors.mutedForeground,
+                    },
+                  ]}
+                >
+                  {count}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <Pressable
+            style={[styles.generateBtn, { backgroundColor: colors.primary }]}
+            onPress={() => handleCopy(`Custom (${customCount})`, "\u200B", customCount)}
+          >
+            <Feather
+              name={copiedType?.includes("Custom") ? "check" : "copy"}
+              size={18}
+              color="#FFFFFF"
+            />
+            <Text style={styles.generateBtnText}>
+              {copiedType?.includes("Custom") ? "Copied!" : `Copy ${customCount} Invisible Chars`}
+            </Text>
+          </Pressable>
+          <Text style={[styles.hint, { color: colors.mutedForeground }]}>
+            Uses Zero Width Space characters. They look blank but take up space.
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  scroll: { flex: 1 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+
+  /* Sections */
   section: {
     paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
     marginBottom: SPACING.xl,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: SPACING.md,
   },

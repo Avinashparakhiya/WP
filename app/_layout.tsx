@@ -11,7 +11,7 @@ import {
   Inter_700Bold,
 } from "@expo-google-fonts/inter";
 import { ErrorBoundary } from "../components/ErrorBoundary";
-import { useColors } from "../lib/useColors";
+import { ThemeProvider } from "../lib/useColors";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,36 +42,38 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: "slide_from_right",
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="ai-message" />
-              <Stack.Screen name="ai-reply" />
-              <Stack.Screen name="ai-translate" />
-              <Stack.Screen name="ai-assistant" />
-              <Stack.Screen name="smart-templates" />
-              <Stack.Screen name="direct-chat" />
-              <Stack.Screen name="link-generator" />
-              <Stack.Screen name="qr-generator" />
-              <Stack.Screen name="fancy-text" />
-              <Stack.Screen name="text-repeater" />
-              <Stack.Screen name="empty-message" />
-              <Stack.Screen name="status-quotes" />
-              <Stack.Screen name="business-templates" />
-              <Stack.Screen name="group-manager" />
-              <Stack.Screen name="voice-message" />
-              <Stack.Screen name="+not-found" />
-            </Stack>
-          </GestureHandlerRootView>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <ThemeProvider>
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: "slide_from_right",
+                }}
+              >
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="ai-message" />
+                <Stack.Screen name="ai-reply" />
+                <Stack.Screen name="ai-translate" />
+                <Stack.Screen name="ai-assistant" />
+                <Stack.Screen name="smart-templates" />
+                <Stack.Screen name="direct-chat" />
+                <Stack.Screen name="link-generator" />
+                <Stack.Screen name="qr-generator" />
+                <Stack.Screen name="fancy-text" />
+                <Stack.Screen name="text-repeater" />
+                <Stack.Screen name="empty-message" />
+                <Stack.Screen name="status-quotes" />
+                <Stack.Screen name="business-templates" />
+                <Stack.Screen name="group-manager" />
+                <Stack.Screen name="voice-message" />
+                <Stack.Screen name="+not-found" />
+              </Stack>
+            </GestureHandlerRootView>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

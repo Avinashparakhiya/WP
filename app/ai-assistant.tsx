@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { Header } from "../components/Header";
+import { router } from "expo-router";
 import { ResultCard } from "../components/ResultCard";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { AiErrorBox } from "../components/AiErrorBox";
@@ -19,7 +19,7 @@ import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
 import { addHistory } from "../lib/storage";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 
 const BUSINESS_TYPES = [
   { id: "sales", label: "Sales", emoji: "\u{1F4B0}" },
@@ -65,10 +65,33 @@ export default function AiAssistantScreen() {
       style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="AI Assistant" subtitle="Business message helper" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>AI Assistant</Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -156,6 +179,28 @@ export default function AiAssistantScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
   inputSection: {
     paddingHorizontal: SPACING.lg,
     gap: SPACING.md,

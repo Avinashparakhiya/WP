@@ -11,10 +11,10 @@ import {
 } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { Header } from "../components/Header";
+import { router } from "expo-router";
 import { ResultCard } from "../components/ResultCard";
 import { useColors } from "../lib/useColors";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 import { BUSINESS_TEMPLATES } from "../constants/businessTemplates";
 
 export default function BusinessTemplatesScreen() {
@@ -42,10 +42,35 @@ export default function BusinessTemplatesScreen() {
       style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="Business Templates" subtitle="Professional message templates" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+              Business Templates
+            </Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -155,14 +180,40 @@ export default function BusinessTemplatesScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+
+  /* Content Sections */
   section: {
     paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
     marginBottom: SPACING.xl,
   },
   sectionLabel: {
     fontSize: 11,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
+    textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: SPACING.md,
   },

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
   Linking,
   PermissionsAndroid,
   Platform,
@@ -13,13 +14,13 @@ import {
 } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
+import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { Header } from "../components/Header";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { AiErrorBox } from "../components/AiErrorBox";
 import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 import { transcribeAudio } from "../lib/openai";
 import { addHistory } from "../lib/storage";
 
@@ -120,172 +121,221 @@ export default function VoiceMessageScreen() {
   };
 
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
-      contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
-      showsVerticalScrollIndicator={false}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="Voice to Message" subtitle="Record & transcribe audio" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>Voice to Message</Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
 
-      <View style={styles.content}>
-        {/* Recording section */}
-        <View
-          style={[
-            styles.recordCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: recording ? colors.destructive : colors.border,
-            },
-          ]}
-        >
-          <Text style={[styles.recordLabel, { color: colors.foreground }]}>
-            {recording ? "Recording..." : hasRecording ? "Recording Complete" : "Tap to Record"}
-          </Text>
-          {recording || hasRecording ? (
-            <Text style={[styles.duration, { color: colors.mutedForeground }]}>
-              {formatDuration(duration)}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.content}>
+          {/* Recording section */}
+          <View
+            style={[
+              styles.recordCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: recording ? colors.destructive : colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.recordLabel, { color: colors.foreground }]}>
+              {recording ? "Recording..." : hasRecording ? "Recording Complete" : "Tap to Record"}
             </Text>
-          ) : null}
+            {recording || hasRecording ? (
+              <Text style={[styles.duration, { color: colors.mutedForeground }]}>
+                {formatDuration(duration)}
+              </Text>
+            ) : null}
 
-          {/* Waveform visualization placeholder */}
-          <View style={styles.waveformContainer}>
-            {recording
-              ? Array.from({ length: 30 }).map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.waveBar,
-                      {
-                        backgroundColor: colors.primary,
-                        height: Math.random() * 30 + 10,
-                      },
-                    ]}
-                  />
-                ))
-              : hasRecording
+            {/* Waveform visualization placeholder */}
+            <View style={styles.waveformContainer}>
+              {recording
                 ? Array.from({ length: 30 }).map((_, i) => (
                     <View
                       key={i}
                       style={[
                         styles.waveBar,
                         {
-                          backgroundColor: colors.mutedForeground,
-                          height: 10,
+                          backgroundColor: colors.primary,
+                          height: Math.random() * 30 + 10,
                         },
                       ]}
                     />
                   ))
-                : Array.from({ length: 30 }).map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.waveBar,
-                        {
-                          backgroundColor: colors.border,
-                          height: 10,
-                        },
-                      ]}
-                    />
-                  ))}
-          </View>
+                : hasRecording
+                  ? Array.from({ length: 30 }).map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.waveBar,
+                          {
+                            backgroundColor: colors.mutedForeground,
+                            height: 10,
+                          },
+                        ]}
+                      />
+                    ))
+                  : Array.from({ length: 30 }).map((_, i) => (
+                      <View
+                        key={i}
+                        style={[
+                          styles.waveBar,
+                          {
+                            backgroundColor: colors.border,
+                            height: 10,
+                          },
+                        ]}
+                      />
+                    ))}
+            </View>
 
-          <Pressable
-            style={[
-              styles.recordBtn,
-              {
-                backgroundColor: recording
-                  ? colors.destructive
-                  : hasRecording
-                    ? `${colors.primary}20`
-                    : colors.primary,
-              },
-            ]}
-            onPress={recording ? handleStopRecording : handleStartRecording}
-          >
-            <Feather
-              name={recording ? "square" : "mic"}
-              size={24}
-              color={recording ? "#FFFFFF" : hasRecording ? colors.primary : "#FFFFFF"}
-            />
-            <Text
-              style={[
-                styles.recordBtnText,
-                { color: recording ? "#FFFFFF" : hasRecording ? colors.primary : "#FFFFFF" },
-              ]}
-            >
-              {recording ? "Stop Recording" : hasRecording ? "Record Again" : "Start Recording"}
-            </Text>
-          </Pressable>
-        </View>
-
-        {hasRecording ? (
-          <>
-            <ApiKeyWarning providerOnly="openai" />
             <Pressable
               style={[
-                styles.transcribeBtn,
-                { backgroundColor: loading ? colors.muted : colors.primary },
-              ]}
-              onPress={handleTranscribe}
-              disabled={loading}
-            >
-              {loading ? (
-                <LoadingSpinner size="small" />
-              ) : (
-                <>
-                  <Feather name="type" size={18} color="#FFFFFF" />
-                  <Text style={styles.transcribeBtnText}>Transcribe Audio</Text>
-                </>
-              )}
-            </Pressable>
-          </>
-        ) : null}
-
-        {error ? <AiErrorBox error={error} onDismiss={() => setError("")} /> : null}
-
-        {transcription ? (
-          <View
-            style={[
-              styles.resultCard,
-              { backgroundColor: colors.card, borderColor: colors.border },
-            ]}
-          >
-            <Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>
-              Transcription
-            </Text>
-            <TextInput
-              style={[
-                styles.resultInput,
+                styles.recordBtn,
                 {
-                  backgroundColor: colors.muted,
-                  color: colors.foreground,
-                  borderColor: colors.inputBorder,
+                  backgroundColor: recording
+                    ? colors.destructive
+                    : hasRecording
+                      ? `${colors.primary}20`
+                      : colors.primary,
                 },
               ]}
-              value={editedText}
-              onChangeText={setEditedText}
-              multiline
-              numberOfLines={5}
-              textAlignVertical="top"
-            />
-            <Text style={[styles.hint, { color: colors.mutedForeground }]}>
-              💡 Requires OpenAI API key. Set it in Settings even if you use Gemini/Groq for chat.
-            </Text>
+              onPress={recording ? handleStopRecording : handleStartRecording}
+            >
+              <Feather
+                name={recording ? "square" : "mic"}
+                size={24}
+                color={recording ? "#FFFFFF" : hasRecording ? colors.primary : "#FFFFFF"}
+              />
+              <Text
+                style={[
+                  styles.recordBtnText,
+                  { color: recording ? "#FFFFFF" : hasRecording ? colors.primary : "#FFFFFF" },
+                ]}
+              >
+                {recording ? "Stop Recording" : hasRecording ? "Record Again" : "Start Recording"}
+              </Text>
+            </Pressable>
           </View>
-        ) : null}
-      </View>
-    </ScrollView>
+
+          {hasRecording ? (
+            <>
+              <ApiKeyWarning providerOnly="openai" />
+              <Pressable
+                style={[
+                  styles.transcribeBtn,
+                  { backgroundColor: loading ? colors.muted : colors.primary },
+                ]}
+                onPress={handleTranscribe}
+                disabled={loading}
+              >
+                {loading ? (
+                  <LoadingSpinner size="small" />
+                ) : (
+                  <>
+                    <Feather name="type" size={18} color="#FFFFFF" />
+                    <Text style={styles.transcribeBtnText}>Transcribe Audio</Text>
+                  </>
+                )}
+              </Pressable>
+            </>
+          ) : null}
+
+          {error ? <AiErrorBox error={error} onDismiss={() => setError("")} /> : null}
+
+          {transcription ? (
+            <View
+              style={[
+                styles.resultCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.resultLabel, { color: colors.mutedForeground }]}>
+                Transcription
+              </Text>
+              <TextInput
+                style={[
+                  styles.resultInput,
+                  {
+                    backgroundColor: colors.muted,
+                    color: colors.foreground,
+                    borderColor: colors.inputBorder,
+                  },
+                ]}
+                value={editedText}
+                onChangeText={setEditedText}
+                multiline
+                numberOfLines={5}
+                textAlignVertical="top"
+              />
+              <Text style={[styles.hint, { color: colors.mutedForeground }]}>
+                💡 Requires OpenAI API key. Set it in Settings even if you use Gemini/Groq for chat.
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  scroll: { flex: 1 },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
   content: {
     paddingHorizontal: SPACING.lg,
     gap: SPACING.md,

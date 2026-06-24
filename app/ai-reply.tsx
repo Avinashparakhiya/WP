@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
-import { Header } from "../components/Header";
+import { router } from "expo-router";
 import { ResultCard } from "../components/ResultCard";
 import { LoadingSpinner } from "../components/LoadingSpinner";
 import { AiErrorBox } from "../components/AiErrorBox";
@@ -19,12 +19,21 @@ import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
 import { addHistory } from "../lib/storage";
-import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING } from "../constants/layout";
+import {
+  RADIUS,
+  RADIUS_SM,
+  SPACING,
+  CONTENT_BOTTOM_PADDING,
+  HEADER_PADDING_TOP,
+} from "../constants/layout";
+
+const TONES = ["Professional", "Friendly", "Formal", "Concise"];
+const GREEN = "#25D366";
 
 export default function AiReplyScreen() {
   const colors = useColors();
   const [receivedMessage, setReceivedMessage] = useState("");
-  const [context, setContext] = useState("");
+  const [tone, setTone] = useState("Professional");
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -35,9 +44,8 @@ export default function AiReplyScreen() {
     setError("");
     setResult("");
     try {
-      const contextPart = context.trim() ? ` Additional context: ${context.trim()}.` : "";
       const response = await chat(
-        `You received this WhatsApp message: "${receivedMessage}"${contextPart} Generate 3 professional and friendly reply options. Number them 1, 2, 3. Keep each reply concise and suitable for WhatsApp.`,
+        `You received this WhatsApp message: "${receivedMessage}". Generate 3 different reply suggestions in a ${tone.toLowerCase()} tone. Number them 1, 2, 3. Keep each reply concise and suitable for WhatsApp. Just output the suggestions, no extra conversation or introduction.`,
       );
       setResult(response);
       await addHistory("AI Reply", response);
@@ -56,10 +64,35 @@ export default function AiReplyScreen() {
       style={[styles.screen, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
+      {/* ── Header ── */}
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-            <Header title="AI Reply" subtitle="Smart reply suggestions" />
+          <View
+            style={[
+              styles.header,
+              {
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                borderBottomColor: colors.border,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() => {
+                if (router.canGoBack()) {
+                  router.back();
+                } else {
+                  router.replace("/");
+                }
+              }}
+              style={styles.backBtn}
+              hitSlop={12}
+            >
+              <Feather name="arrow-left" size={22} color={colors.foreground} />
+            </Pressable>
+            <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+              AI Reply Generator
+            </Text>
+            <View style={{ width: 34 }} />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -70,65 +103,104 @@ export default function AiReplyScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.inputSection}>
-          <Text style={[styles.label, { color: colors.foreground }]}>Message you received</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.card,
-                color: colors.foreground,
-                borderColor: colors.inputBorder,
-              },
-            ]}
-            placeholder="Paste the message you received..."
-            placeholderTextColor={colors.mutedForeground}
-            value={receivedMessage}
-            onChangeText={setReceivedMessage}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-          />
+        {/* ── Received Message Card ── */}
+        <View style={styles.sectionWrap}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+              RECEIVED MESSAGE
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colors.muted,
+                  color: colors.foreground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+              placeholder="Paste the message you received..."
+              placeholderTextColor={colors.mutedForeground}
+              value={receivedMessage}
+              onChangeText={setReceivedMessage}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+        </View>
 
-          <Text style={[styles.label, { color: colors.foreground }]}>Reply context (optional)</Text>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: colors.card,
-                color: colors.foreground,
-                borderColor: colors.inputBorder,
-              },
-            ]}
-            placeholder="e.g., This is from my boss, keep it formal..."
-            placeholderTextColor={colors.mutedForeground}
-            value={context}
-            onChangeText={setContext}
-            multiline
-            numberOfLines={2}
-            textAlignVertical="top"
-          />
+        {/* ── Reply Tone Card ── */}
+        <View style={styles.sectionWrap}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>REPLY TONE</Text>
+            <View style={styles.chipRow}>
+              {TONES.map((item) => (
+                <Pressable
+                  key={item}
+                  style={[
+                    styles.chip,
+                    tone === item
+                      ? styles.chipSelected
+                      : { backgroundColor: colors.muted, borderColor: colors.border },
+                  ]}
+                  onPress={() => setTone(item)}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      tone === item ? styles.chipTextSelected : { color: colors.foreground },
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
+        </View>
 
+        {/* ── API Key Warning ── */}
+        <View style={styles.sectionWrap}>
           <ApiKeyWarning />
+        </View>
 
+        {/* ── Generate Button ── */}
+        <View style={styles.sectionWrap}>
           <Pressable
-            style={[styles.button, { backgroundColor: loading ? colors.muted : colors.primary }]}
+            style={[
+              styles.generateBtn,
+              {
+                backgroundColor: loading ? colors.muted : GREEN,
+                opacity: loading || !receivedMessage.trim() ? 0.7 : 1,
+              },
+            ]}
             onPress={handleGenerate}
             disabled={loading || !receivedMessage.trim()}
           >
             {loading ? (
-              <LoadingSpinner size="small" color={colors.mutedForeground} />
+              <LoadingSpinner size="small" color="#FFF" />
             ) : (
               <>
-                <Feather name="corner-up-left" size={18} color="#FFFFFF" />
-                <Text style={styles.buttonText}>Generate Replies</Text>
+                <Feather name="zap" size={18} color="#FFFFFF" />
+                <Text style={styles.generateBtnText}>Generate Replies</Text>
               </>
             )}
           </Pressable>
         </View>
 
-        {error ? <AiErrorBox error={error} onDismiss={() => setError("")} /> : null}
-        {result ? <ResultCard result={result} /> : null}
+        {/* ── Error ── */}
+        {error ? (
+          <View style={styles.sectionWrap}>
+            <AiErrorBox error={error} onDismiss={() => setError("")} />
+          </View>
+        ) : null}
+
+        {/* ── Result ── */}
+        {result ? (
+          <View style={styles.sectionWrap}>
+            <ResultCard result={result} />
+          </View>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -137,36 +209,106 @@ export default function AiReplyScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
-  inputSection: {
+
+  /* Header */
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: SPACING.md,
     paddingHorizontal: SPACING.lg,
-    gap: SPACING.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  label: {
-    fontSize: 15,
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontSize: 17,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+  },
+
+  /* Sections */
+  sectionWrap: {
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.md,
+  },
+
+  /* Card */
+  card: {
+    borderRadius: RADIUS,
+    borderWidth: 1,
+    padding: SPACING.md,
+    gap: SPACING.sm,
+  },
+
+  /* Section Label */
+  sectionLabel: {
+    fontSize: 11,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
+    letterSpacing: 1,
   },
-  input: {
-    borderRadius: RADIUS,
+
+  /* Chips */
+  chipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: SPACING.sm,
+    paddingVertical: 2,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  chipSelected: {
+    backgroundColor: GREEN,
+    borderColor: GREEN,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: "500",
+    fontFamily: "Inter_500Medium",
+  },
+  chipTextSelected: {
+    color: "#FFFFFF",
+  },
+
+  /* Text Input */
+  textInput: {
+    minHeight: 100,
+    borderRadius: RADIUS_SM,
     borderWidth: 1,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.md,
     fontSize: 14,
     fontFamily: "Inter_400Regular",
-    minHeight: 80,
   },
-  button: {
+
+  /* Generate Button */
+  generateBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: SPACING.sm,
-    paddingVertical: SPACING.md,
+    height: 52,
     borderRadius: RADIUS,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
   },
-  buttonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: "Inter_600SemiBold",
+  generateBtnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
     color: "#FFFFFF",
   },
 });

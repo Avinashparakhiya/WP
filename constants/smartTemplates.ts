@@ -169,4 +169,85 @@ export const SMART_TEMPLATE_CATEGORIES: SmartTemplateCategory[] = [
       },
     ],
   },
+  {
+    id: "teacher",
+    title: "Teacher",
+    emoji: "\u{1F9D1}\u{200D}\u{1F3EB}",
+    templates: [
+      {
+        title: "Homework Assignment",
+        prompt:
+          "Write a professional WhatsApp message from a teacher sharing a homework assignment. Include placeholders for subject, topic, due date, and instructions.",
+      },
+      {
+        title: "Parent-Teacher Meeting",
+        prompt:
+          "Write a polite WhatsApp message from a teacher inviting a parent to a parent-teacher meeting. Include placeholders for student name, date, time, and meeting link/location.",
+      },
+      {
+        title: "Class Update",
+        prompt:
+          "Write an urgent WhatsApp announcement from a teacher/tutor about a class schedule change or cancellation. Include placeholders for subject, original time, and new time.",
+      },
+      {
+        title: "Exam Results Notice",
+        prompt:
+          "Write a supportive WhatsApp message from a teacher notifying a parent/student about exam results being published. Include placeholders for subject and where to check the grades.",
+      },
+      {
+        title: "Fee Reminder",
+        prompt:
+          "Write a polite WhatsApp reminder from a tutor about monthly tuition fees. Include placeholders for student name, fee amount, and payment deadline.",
+      },
+    ],
+  },
+  {
+    id: "fitness",
+    title: "Fitness Coach",
+    emoji: "\u{1F3CB}\u{FE0F}\u{200D}\u{2642}\u{FE0F}",
+    templates: [
+      {
+        title: "Workout Schedule",
+        prompt:
+          "Write an encouraging WhatsApp message from a fitness coach sharing a workout routine. Include placeholders for client name, workout focus, and duration.",
+      },
+      {
+        title: "Nutrition Plan",
+        prompt:
+          "Write a friendly WhatsApp reminder from a trainer about a diet or hydration plan. Include placeholders for meal type, recommended foods, and tips.",
+      },
+      {
+        title: "Session Confirmation",
+        prompt:
+          "Write a WhatsApp confirmation message for a personal training session. Include placeholders for client name, date, and time.",
+      },
+      {
+        title: "Progress Milestone",
+        prompt:
+          "Write a motivational WhatsApp message celebrating a client's fitness milestone. Include placeholders for client name, goal achieved, and encouragement.",
+      },
+    ],
+  },
+  {
+    id: "salon",
+    title: "Salon Owner",
+    emoji: "\u{1F487}\u{200D}\u{2640}\u{FE0F}",
+    templates: [
+      {
+        title: "Booking Confirmation",
+        prompt:
+          "Write a friendly WhatsApp booking confirmation for a salon appointment. Include placeholders for customer name, service type, date, and time.",
+      },
+      {
+        title: "Promo Discount",
+        prompt:
+          "Write a beautiful WhatsApp marketing message for a beauty salon discount. Include placeholders for discount amount, service names, and expiration date.",
+      },
+      {
+        title: "Feedback Request",
+        prompt:
+          "Write a polite WhatsApp message from a salon therapist asking a client for review/feedback after a service. Include salon name placeholder.",
+      },
+    ],
+  },
 ];
