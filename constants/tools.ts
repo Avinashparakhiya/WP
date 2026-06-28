@@ -64,6 +64,14 @@ export const SECTIONS: Section[] = [
         route: "/status-saver",
         category: "whatsapp",
       },
+      {
+        id: "bulk-message",
+        title: "Bulk Message Sender",
+        subtitle: "Send bulk messages to contacts",
+        icon: "message-square",
+        route: "/bulk-message",
+        category: "whatsapp",
+      },
     ],
   },
   {
