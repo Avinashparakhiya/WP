@@ -1,6 +1,7 @@
 {
   "expo": {
-    "name": "WhatsApp Toolkit AI",
+    "name": "Whatsup Toolkit AI",
+    "description": "Helper toolkit for WhatsApp: Direct chat to unsaved numbers, status downloader, fancy text styler, text repeater, group links manager, and AI message writer.",
     "owner": "parakhiya03",
     "slug": "whatsapp-toolkit-ai",
     "version": "1.0.0",
