@@ -273,7 +273,7 @@ export default function HistoryScreen() {
           <EmptyState
             icon="clock"
             title="No history found"
-            description={search ? "Try searching for something else" : "Your generated messages will appear here"}
+            subtitle={search ? "Try searching for something else" : "Your generated messages will appear here"}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -285,7 +285,7 @@ export default function HistoryScreen() {
         title="Clear all history?"
         message="This will permanently delete all items in your history. This action cannot be undone."
         confirmLabel="Clear All"
-        confirmColor={colors.destructive}
+        destructive
         onConfirm={handleClearAll}
         onCancel={() => setConfirmClear(false)}
       />
@@ -295,7 +295,7 @@ export default function HistoryScreen() {
         title="Delete selected?"
         message="Are you sure you want to delete selected history? Once deleted, it cannot be undone."
         confirmLabel="Delete"
-        confirmColor={colors.destructive}
+        destructive
         onConfirm={handleDeleteSelected}
         onCancel={() => setConfirmDelete(false)}
       />

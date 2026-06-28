@@ -26,6 +26,8 @@ import {
 } from "../constants/layout";
 import { COUNTRIES } from "../constants/countries";
 import { getRecentContacts, addRecentContact, getPredefinedMessage, savePredefinedMessage } from "../lib/storage";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 
 const GREEN = "#25D366";
 
@@ -39,7 +41,7 @@ export default function DirectChatScreen() {
   const [search, setSearch] = useState("");
   const [predefinedMessage, setPredefinedMessage] = useState("");
   const [recentContacts, setRecentContacts] = useState<
-    { id: string; name?: string; phone: string; countryCode: string }[]
+    { id: string; name?: string; phone: string; countryCode: string; createdAt?: number }[]
   >([]);
 
   useEffect(() => {
@@ -60,6 +62,14 @@ export default function DirectChatScreen() {
     setPredefinedMessage("");
     await savePredefinedMessage("");
     Alert.alert("Cleared", "Predefined message cleared.");
+  };
+
+  const handlePaste = async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setPredefinedMessage(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
   };
 
   const formatRelativeTime = (ts?: number) => {
@@ -209,9 +219,15 @@ export default function DirectChatScreen() {
         {/* ── Predefined Message Card (Optional) ── */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              PREDEFINED MESSAGE (OPTIONAL)
-            </Text>
+            <View style={styles.labelRow}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                PREDEFINED MESSAGE (OPTIONAL)
+              </Text>
+              <Pressable onPress={handlePaste} style={styles.pasteBtn} hitSlop={8}>
+                <Feather name="clipboard" size={14} color={colors.primary} />
+                <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+              </Pressable>
+            </View>
             <TextInput
               style={[
                 styles.messageInput,
@@ -240,6 +256,7 @@ export default function DirectChatScreen() {
                   Save Message
                 </Text>
               </Pressable>
+
               {predefinedMessage.trim() !== "" && (
                 <Pressable
                   style={[styles.clearMessageBtn, { backgroundColor: "rgba(239, 68, 68, 0.12)" }]}
@@ -463,6 +480,7 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
+    minWidth: 0,
     height: 48,
     borderRadius: RADIUS_SM,
     borderWidth: 1,
@@ -655,6 +673,24 @@ const styles = StyleSheet.create({
   },
   clearMessageBtnText: {
     fontSize: 13,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  pasteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  pasteBtnText: {
+    fontSize: 12,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
   },

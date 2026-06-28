@@ -209,6 +209,7 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
+    minWidth: 0,
     height: 38,
     borderRadius: RADIUS_SM,
     borderWidth: 1,

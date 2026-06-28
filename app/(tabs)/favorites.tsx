@@ -221,7 +221,7 @@ export default function FavoritesScreen() {
           <EmptyState
             icon="heart"
             title="No favorites yet"
-            description={search ? "Try searching for something else" : "Tap the heart icon on any generated AI message to save it here"}
+            subtitle={search ? "Try searching for something else" : "Tap the heart icon on any generated AI message to save it here"}
           />
         }
         showsVerticalScrollIndicator={false}
@@ -233,7 +233,7 @@ export default function FavoritesScreen() {
         title="Delete selected?"
         message={`Are you sure you want to delete the ${selected.size} selected items?`}
         confirmLabel="Delete"
-        confirmColor={colors.destructive}
+        destructive
         onConfirm={handleDeleteSelected}
         onCancel={() => setConfirmDelete(false)}
       />
@@ -519,6 +519,7 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
+    minWidth: 0,
     height: 44,
     borderRadius: RADIUS,
     borderWidth: 1,

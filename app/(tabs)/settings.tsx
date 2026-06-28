@@ -97,28 +97,6 @@ const PROVIDERS: ProviderConfig[] = [
       "Paste above and tap Save",
     ],
   },
-  {
-    id: "openai",
-    name: "OpenAI",
-    model: "GPT-3.5 Turbo",
-    rateLimit: "Requires billing",
-    badge: "PAID",
-    color: "#10A37F",
-    dotColor: "#10A37F",
-    getKey: getApiKey,
-    setKey: setApiKey,
-    keyPrefix: "sk-....",
-    consoleUrl: "https://platform.openai.com/api-keys",
-    consoleName: "OpenAI Platform",
-    infoText: "OpenAI requires a paid account with billing enabled. GPT-3.5 Turbo is affordable.",
-    howToSteps: [
-      "Go to platform.openai.com",
-      "Sign in and set up billing",
-      "Click 'API Keys' → 'Create new secret key'",
-      "Copy the key (starts with sk-....)",
-      "Paste above and tap Save",
-    ],
-  },
 ];
 
 const GREEN = "#25D366";
@@ -199,7 +177,7 @@ export default function SettingsScreen() {
     setTesting(null);
   };
 
-  const selectedProvider = PROVIDERS.find((p) => p.id === provider)!;
+  const selectedProvider = PROVIDERS.find((p) => p.id === provider) || PROVIDERS[0];
   const platformName = Platform.OS === "web" ? "Web" : Platform.OS === "ios" ? "iOS" : "Android";
 
   return (

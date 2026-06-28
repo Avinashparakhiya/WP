@@ -114,8 +114,70 @@ export default function QrGeneratorScreen() {
     await addHistory("QR Generator", generatedUrl);
   }, [generatedUrl]);
 
+  const handlePaste = useCallback(async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setCustomText(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
+  const handlePasteUpi = useCallback(async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setUpiId(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
+  const handlePastePaymentLink = useCallback(async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setPaymentLink(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
   const handleShareQR = useCallback(async () => {
     if (!generatedUrl) return;
+
+    if (Platform.OS === "web") {
+      try {
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedUrl)}`;
+        
+        if (navigator.share) {
+          const response = await fetch(qrApiUrl);
+          const blob = await response.blob();
+          const file = new File([blob], "qr_code.png", { type: "image/png" });
+          
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              files: [file],
+              title: "Share QR Code",
+              text: "Here is my generated QR Code",
+            });
+            await addHistory("QR Code Shared", generatedUrl);
+            return;
+          }
+        }
+        
+        // Fallback: Copy URL
+        await Clipboard.setStringAsync(qrApiUrl);
+        Alert.alert("Link Copied", "QR Code image link copied to clipboard. You can share it anywhere!");
+        await addHistory("QR Code Shared (Copied Link)", generatedUrl);
+      } catch (err) {
+        console.error("Web share failed, falling back to copy:", err);
+        try {
+          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedUrl)}`;
+          await Clipboard.setStringAsync(qrApiUrl);
+          Alert.alert("Link Copied", "QR Code image link copied to clipboard. You can share it anywhere!");
+        } catch {
+          Alert.alert("Error", "Could not share or copy QR code link.");
+        }
+      }
+      return;
+    }
+
     try {
       const filename = "qr_code.png";
       const localUri = `${FileSystem.cacheDirectory}${filename}`;
@@ -139,6 +201,31 @@ export default function QrGeneratorScreen() {
 
   const handleDownloadQR = useCallback(async () => {
     if (!generatedUrl) return;
+
+    if (Platform.OS === "web") {
+      try {
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(generatedUrl)}`;
+        const response = await fetch(qrApiUrl);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = "qr_code.png";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        
+        Alert.alert("Success", "QR Code downloaded successfully!");
+        await addHistory("QR Code Saved", generatedUrl);
+      } catch (err) {
+        console.error(err);
+        Alert.alert("Error", "Failed to download QR code.");
+      }
+      return;
+    }
+
     try {
       let status = "denied";
       try {
@@ -335,9 +422,15 @@ export default function QrGeneratorScreen() {
             <View
               style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
             >
+            <View style={styles.labelRow}>
               <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
                 TEXT / URL
               </Text>
+              <Pressable onPress={handlePaste} style={styles.pasteBtn} hitSlop={8}>
+                <Feather name="clipboard" size={14} color={colors.primary} />
+                <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+              </Pressable>
+            </View>
               <TextInput
                 style={[
                   styles.multilineInput,
@@ -373,14 +466,15 @@ export default function QrGeneratorScreen() {
               </View>
 
               {/* UPI ID */}
-              <Text
-                style={[
-                  styles.sectionLabel,
-                  { color: colors.mutedForeground, marginTop: SPACING.xs },
-                ]}
-              >
-                UPI ID (OPTIONAL)
-              </Text>
+              <View style={[styles.labelRow, { marginTop: SPACING.xs }]}>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                  UPI ID (OPTIONAL)
+                </Text>
+                <Pressable onPress={handlePasteUpi} style={styles.pasteBtn} hitSlop={8}>
+                  <Feather name="clipboard" size={14} color={colors.primary} />
+                  <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+                </Pressable>
+              </View>
               <TextInput
                 style={[
                   styles.textInput,
@@ -419,8 +513,17 @@ export default function QrGeneratorScreen() {
                 placeholder="0.00"
                 placeholderTextColor={colors.mutedForeground}
                 value={amount}
-                onChangeText={setAmount}
-                keyboardType="numeric"
+                onChangeText={(text) => {
+                  // Allow only numbers and at most one decimal point
+                  const cleaned = text.replace(/[^0-9.]/g, "");
+                  const parts = cleaned.split(".");
+                  if (parts.length > 2) {
+                    setAmount(parts[0] + "." + parts.slice(1).join(""));
+                  } else {
+                    setAmount(cleaned);
+                  }
+                }}
+                keyboardType="decimal-pad"
               />
 
               {/* Note */}
@@ -455,9 +558,15 @@ export default function QrGeneratorScreen() {
               </View>
 
               {/* Direct Payment link */}
-              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-                PAYMENT LINK / URL (OPTIONAL)
-              </Text>
+              <View style={styles.labelRow}>
+                <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                  PAYMENT LINK / URL (OPTIONAL)
+                </Text>
+                <Pressable onPress={handlePastePaymentLink} style={styles.pasteBtn} hitSlop={8}>
+                  <Feather name="clipboard" size={14} color={colors.primary} />
+                  <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+                </Pressable>
+              </View>
               <TextInput
                 style={[
                   styles.textInput,
@@ -768,6 +877,7 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
+    minWidth: 0,
     height: 48,
     borderRadius: RADIUS_SM,
     borderWidth: 1,
@@ -977,6 +1087,24 @@ const styles = StyleSheet.create({
   },
   countryDialText: {
     fontSize: 15,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  pasteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  pasteBtnText: {
+    fontSize: 12,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
   },
