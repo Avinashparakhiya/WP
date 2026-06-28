@@ -116,6 +116,15 @@ export const SECTIONS: Section[] = [
         category: "ai",
         isAI: true,
       },
+      {
+        id: "greeting-generator",
+        title: "Greeting Card Generator",
+        subtitle: "Festival & occasion greetings",
+        icon: "gift",
+        route: "/greeting-generator",
+        category: "ai",
+        isAI: true,
+      },
     ],
   },
   {
