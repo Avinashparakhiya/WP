@@ -16,47 +16,15 @@ interface ListItem {
   tool?: (typeof ALL_TOOLS)[number];
 }
 
-const listData: ListItem[] = [
-  { type: "header" },
-  ...SECTIONS.flatMap((section) => [
-    { type: "section" as const, sectionId: section.id },
-    ...section.tools.map((tool) => ({ type: "tool" as const, tool })),
-  ]),
-];
+const listData: ListItem[] = SECTIONS.flatMap((section) => [
+  { type: "section" as const, sectionId: section.id },
+  ...section.tools.map((tool) => ({ type: "tool" as const, tool })),
+]);
 
 export default function HomeScreen() {
   const colors = useColors();
 
   const renderItem = ({ item }: { item: ListItem }) => {
-    if (item.type === "header") {
-      return (
-        <SafeAreaInsetsContext.Consumer>
-          {(insets) => (
-            <View
-              style={[
-                styles.headerContainer,
-                { paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP },
-              ]}
-            >
-              <View style={styles.headerRow}>
-                <View>
-                  <Text style={[styles.headerTitle, { color: colors.foreground }]}>
-                    WhatsApp Toolkit
-                  </Text>
-                  <Text style={[styles.headerSubtitle, { color: colors.mutedForeground }]}>
-                    15+ powerful tools
-                  </Text>
-                </View>
-                <View style={styles.headerIconWrap}>
-                  <Feather name="zap" size={22} color="#25D366" />
-                </View>
-              </View>
-            </View>
-          )}
-        </SafeAreaInsetsContext.Consumer>
-      );
-    }
-
     if (item.type === "section") {
       const section = SECTIONS.find((s) => s.id === item.sectionId)!;
       return <SectionHeader label={section.label} color={section.id} icon={section.sectionIcon} />;
@@ -79,15 +47,40 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
+      <SafeAreaInsetsContext.Consumer>
+        {(insets) => (
+          <View
+            style={[
+              styles.headerContainer,
+              { 
+                paddingTop: (insets?.top ?? 0) + HEADER_PADDING_TOP,
+                backgroundColor: colors.background,
+              },
+            ]}
+          >
+            <View style={styles.headerRow}>
+              <View>
+                <Text style={[styles.headerTitle, { color: colors.foreground }]}>
+                  WhatsApp Toolkit
+                </Text>
+                <Text style={[styles.headerSubtitle, { color: colors.mutedForeground }]}>
+                  15+ powerful tools
+                </Text>
+              </View>
+              <View style={styles.headerIconWrap}>
+                <Feather name="zap" size={22} color="#25D366" />
+              </View>
+            </View>
+          </View>
+        )}
+      </SafeAreaInsetsContext.Consumer>
       <FlatList
         data={listData}
         renderItem={renderItem}
         keyExtractor={(item) =>
-          item.type === "header"
-            ? "header"
-            : item.type === "section"
-              ? `s-${item.sectionId}`
-              : `t-${item.tool?.id}`
+          item.type === "section"
+            ? `s-${item.sectionId}`
+            : `t-${item.tool?.id}`
         }
         contentContainerStyle={[
           styles.listContent,
@@ -108,6 +101,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     paddingBottom: SPACING.md,
+    paddingHorizontal: SPACING.lg,
   },
   headerRow: {
     flexDirection: "row",

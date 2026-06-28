@@ -14,6 +14,7 @@ import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { Header } from "../../components/Header";
+import { router } from "expo-router";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { useColors, useTheme, type ThemePreference } from "../../lib/useColors";
 import { CONTENT_BOTTOM_PADDING, RADIUS, RADIUS_SM, SPACING } from "../../constants/layout";
@@ -202,18 +203,23 @@ export default function SettingsScreen() {
   const platformName = Platform.OS === "web" ? "Web" : Platform.OS === "ios" ? "iOS" : "Android";
 
   return (
-    <ScrollView
-      style={[styles.screen, { backgroundColor: colors.background }]}
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
-    >
+    <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <SafeAreaInsetsContext.Consumer>
         {(insets) => (
-          <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
+          <View style={{ 
+            paddingTop: (insets?.top ?? 0) + 16,
+            backgroundColor: colors.background,
+          }}>
             <Header title="Settings" />
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: CONTENT_BOTTOM_PADDING + SPACING.xl }}
+      >
 
       {/* ── Theme Section ── */}
       <View style={styles.section}>
@@ -534,10 +540,26 @@ export default function SettingsScreen() {
             <Text style={[styles.aboutLabel, { color: colors.foreground }]}>Platform</Text>
             <Text style={[styles.aboutValue, { color: GREEN }]}>{platformName}</Text>
           </View>
-          <View style={[styles.aboutRow, { borderBottomWidth: 0 }]}>
+          <View style={[styles.aboutRow, { borderBottomColor: colors.border }]}>
             <Text style={[styles.aboutLabel, { color: colors.foreground }]}>AI Provider</Text>
             <Text style={[styles.aboutValue, { color: GREEN }]}>{selectedProvider.name}</Text>
           </View>
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push("/privacy-policy");
+            }}
+            style={({ pressed }) => [
+              styles.aboutRow,
+              {
+                borderBottomWidth: 0,
+                backgroundColor: pressed ? `${colors.primary}08` : "transparent",
+              },
+            ]}
+          >
+            <Text style={[styles.aboutLabel, { color: colors.foreground }]}>Privacy Policy</Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </Pressable>
         </View>
       </View>
 
@@ -549,6 +571,7 @@ export default function SettingsScreen() {
         </Text>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
