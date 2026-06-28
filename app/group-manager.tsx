@@ -279,13 +279,7 @@ export default function GroupManagerScreen() {
       {/* Add Modal */}
       <Modal visible={showAdd} animationType="slide" onRequestClose={() => setShowAdd(false)}>
         <View style={[styles.modal, { backgroundColor: colors.background }]}>
-          <SafeAreaInsetsContext.Consumer>
-            {(insets) => (
-              <View style={{ paddingTop: (insets?.top ?? 0) + 16 }}>
-                <Header title="Add Group Link" />
-              </View>
-            )}
-          </SafeAreaInsetsContext.Consumer>
+           <Header title="Add Group Link" />
           <View style={styles.modalContent}>
             <Text style={[styles.label, { color: colors.foreground }]}>Group Name</Text>
             <TextInput

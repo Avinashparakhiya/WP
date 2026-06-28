@@ -26,7 +26,12 @@
       "package": "com.whatsapptoolkitai.mobile",
       "permissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.MODIFY_AUDIO_SETTINGS"
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ]
     },
     "web": {
@@ -36,7 +41,14 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
-      "expo-av"
+      "expo-av",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow this app to access your photos.",
+          "savePhotosPermission": "Allow this app to save photos to your library."
+        }
+      ]
     ],
     "extra": {
       "router": {},

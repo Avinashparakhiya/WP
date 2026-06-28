@@ -41,10 +41,10 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="favorites"
         options={{
-          title: "History",
-          tabBarIcon: ({ color, size }) => <Feather name="clock" size={size} color={color} />,
+          title: "Favorites",
+          tabBarIcon: ({ color, size }) => <Feather name="heart" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

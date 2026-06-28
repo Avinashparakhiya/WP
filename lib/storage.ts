@@ -9,6 +9,7 @@ export interface HistoryItem {
   tool: string;
   value: string;
   createdAt: number;
+  isFavorite?: boolean;
 }
 
 export interface RecentContact {
@@ -39,6 +40,7 @@ const KEYS = {
   openaiKey: "openai_api_key",
   geminiKey: "gemini_api_key",
   groqKey: "groq_api_key",
+  predefinedMessage: "predefined_message",
 } as const;
 
 // ── Helpers ────────────────────────────────────────────────────────
@@ -100,6 +102,68 @@ export async function deleteHistoryItems(ids: string[]): Promise<void> {
 
 export async function clearHistory(): Promise<void> {
   await AsyncStorage.removeItem(KEYS.history);
+}
+
+export async function toggleFavoriteHistoryItem(id: string): Promise<boolean> {
+  const history = (await getItem<HistoryItem[]>(KEYS.history)) ?? [];
+  let isFav = false;
+  const updated = history.map((item) => {
+    if (item.id === id) {
+      isFav = !item.isFavorite;
+      return { ...item, isFavorite: isFav };
+    }
+    return item;
+  });
+  await setItem(KEYS.history, updated);
+  return isFav;
+}
+
+export async function toggleFavoriteHistoryItemByText(value: string, tool: string): Promise<boolean> {
+  const history = (await getItem<HistoryItem[]>(KEYS.history)) ?? [];
+  let isFav = false;
+  let found = false;
+  const updated = history.map((item) => {
+    if (item.value.trim() === value.trim() && item.tool === tool) {
+      found = true;
+      isFav = !item.isFavorite;
+      return { ...item, isFavorite: isFav };
+    }
+    return item;
+  });
+
+  if (!found) {
+    history.unshift({
+      id: generateId(),
+      tool,
+      value,
+      createdAt: Date.now(),
+      isFavorite: true,
+    });
+    isFav = true;
+    await setItem(KEYS.history, history);
+  } else {
+    await setItem(KEYS.history, updated);
+  }
+  return isFav;
+}
+
+export async function isHistoryItemFavorite(value: string, tool: string): Promise<boolean> {
+  const history = (await getItem<HistoryItem[]>(KEYS.history)) ?? [];
+  const found = history.find(
+    (item) => item.value.trim() === value.trim() && item.tool === tool
+  );
+  return found ? !!found.isFavorite : false;
+}
+
+export async function updateHistoryItemValue(id: string, newValue: string): Promise<void> {
+  const history = (await getItem<HistoryItem[]>(KEYS.history)) ?? [];
+  const updated = history.map((item) => {
+    if (item.id === id) {
+      return { ...item, value: newValue };
+    }
+    return item;
+  });
+  await setItem(KEYS.history, updated);
 }
 
 // ── Recent Contacts ────────────────────────────────────────────────
@@ -275,4 +339,12 @@ export async function testApiKey(provider: AIProvider): Promise<void> {
       throw new Error(`OpenAI test failed (${res.status}): ${err}`);
     }
   }
+}
+
+export async function getPredefinedMessage(): Promise<string> {
+  return (await getItem<string>(KEYS.predefinedMessage)) ?? "";
+}
+
+export async function savePredefinedMessage(msg: string): Promise<void> {
+  await setItem(KEYS.predefinedMessage, msg);
 }

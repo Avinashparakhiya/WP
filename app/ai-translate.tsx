@@ -18,7 +18,9 @@ import { AiErrorBox } from "../components/AiErrorBox";
 import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
-import { addHistory } from "../lib/storage";
+import { addHistory, toggleFavoriteHistoryItemByText } from "../lib/storage";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import {
   RADIUS,
   RADIUS_SM,
@@ -58,12 +60,22 @@ export default function AiTranslateScreen() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isFav, setIsFav] = useState(false);
+
+  const handlePaste = async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setText(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
 
   const handleTranslate = async () => {
     if (!text.trim() || !language.trim()) return;
     setLoading(true);
     setError("");
     setResult("");
+    setIsFav(false);
     try {
       const response = await chat(
         `Translate the following text to ${language.trim()}. Only output the translation, nothing else:\n\n"${text.trim()}"`,
@@ -125,9 +137,15 @@ export default function AiTranslateScreen() {
         {/* ── Text to Translate Card ── */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              TEXT TO TRANSLATE
-            </Text>
+            <View style={styles.labelRow}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                TEXT TO TRANSLATE
+              </Text>
+              <Pressable onPress={handlePaste} style={styles.pasteBtn} hitSlop={8}>
+                <Feather name="clipboard" size={14} color={colors.primary} />
+                <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+              </Pressable>
+            </View>
             <TextInput
               style={[
                 styles.textInput,
@@ -223,7 +241,14 @@ export default function AiTranslateScreen() {
         {/* ── Result ── */}
         {result ? (
           <View style={styles.sectionWrap}>
-            <ResultCard result={result} />
+            <ResultCard
+              result={result}
+              isFavorite={isFav}
+              onToggleFavorite={async () => {
+                const toggled = await toggleFavoriteHistoryItemByText(result, "AI Translate");
+                setIsFav(toggled);
+              }}
+            />
           </View>
         ) : null}
       </ScrollView>
@@ -261,6 +286,25 @@ const styles = StyleSheet.create({
   sectionWrap: {
     paddingHorizontal: SPACING.lg,
     marginTop: SPACING.md,
+  },
+
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  pasteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  pasteBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
   },
 
   /* Card */
