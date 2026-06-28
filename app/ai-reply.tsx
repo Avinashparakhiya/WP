@@ -18,7 +18,9 @@ import { AiErrorBox } from "../components/AiErrorBox";
 import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
-import { addHistory } from "../lib/storage";
+import { addHistory, toggleFavoriteHistoryItemByText } from "../lib/storage";
+import * as Clipboard from "expo-clipboard";
+import * as Haptics from "expo-haptics";
 import {
   RADIUS,
   RADIUS_SM,
@@ -37,12 +39,22 @@ export default function AiReplyScreen() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>({});
+
+  const handlePaste = async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setReceivedMessage(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
 
   const handleGenerate = async () => {
     if (!receivedMessage.trim()) return;
     setLoading(true);
     setError("");
     setResult("");
+    setFavoritesMap({});
     try {
       const response = await chat(
         `You received this WhatsApp message: "${receivedMessage}". Generate 3 different reply suggestions in a ${tone.toLowerCase()} tone. Number them 1, 2, 3. Keep each reply concise and suitable for WhatsApp. Just output the suggestions, no extra conversation or introduction.`,
@@ -57,6 +69,23 @@ export default function AiReplyScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const parseSuggestions = (text: string): string[] => {
+    if (!text) return [];
+    const lines = text.split(/\r?\n/);
+    const suggestions: string[] = [];
+    for (let line of lines) {
+      let trimmed = line.trim();
+      if (!trimmed) continue;
+      trimmed = trimmed.replace(/^[0-9]+[\.\)]\s*/, "");
+      trimmed = trimmed.replace(/^[\-\*]\s*/, "");
+      trimmed = trimmed.replace(/^["']|["']$/g, "").trim();
+      if (trimmed) {
+        suggestions.push(trimmed);
+      }
+    }
+    return suggestions.length > 0 ? suggestions : [text.trim()];
   };
 
   return (
@@ -106,9 +135,15 @@ export default function AiReplyScreen() {
         {/* ── Received Message Card ── */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              RECEIVED MESSAGE
-            </Text>
+            <View style={styles.labelRow}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                RECEIVED MESSAGE
+              </Text>
+              <Pressable onPress={handlePaste} style={styles.pasteBtn} hitSlop={8}>
+                <Feather name="clipboard" size={14} color={colors.primary} />
+                <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+              </Pressable>
+            </View>
             <TextInput
               style={[
                 styles.textInput,
@@ -197,8 +232,25 @@ export default function AiReplyScreen() {
 
         {/* ── Result ── */}
         {result ? (
-          <View style={styles.sectionWrap}>
-            <ResultCard result={result} />
+          <View style={{ gap: SPACING.md, marginTop: SPACING.sm }}>
+            {parseSuggestions(result).map((suggestion, index) => {
+              const isFavorite = !!favoritesMap[suggestion];
+              return (
+                <View key={index} style={styles.sectionWrap}>
+                  <Text style={[styles.resultBadge, { color: colors.mutedForeground }]}>
+                    REPLY OPTION {index + 1}
+                  </Text>
+                  <ResultCard
+                    result={suggestion}
+                    isFavorite={isFavorite}
+                    onToggleFavorite={async () => {
+                      const toggled = await toggleFavoriteHistoryItemByText(suggestion, "AI Reply");
+                      setFavoritesMap((prev) => ({ ...prev, [suggestion]: toggled }));
+                    }}
+                  />
+                </View>
+              );
+            })}
           </View>
         ) : null}
       </ScrollView>
@@ -238,6 +290,25 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
   },
 
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  pasteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  pasteBtnText: {
+    fontSize: 12,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+
   /* Card */
   card: {
     borderRadius: RADIUS,
@@ -252,6 +323,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
     letterSpacing: 1,
+  },
+  resultBadge: {
+    fontSize: 10,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+    marginBottom: 6,
+    textTransform: "uppercase",
   },
 
   /* Chips */

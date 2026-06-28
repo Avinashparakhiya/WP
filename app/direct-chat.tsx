@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -24,7 +25,7 @@ import {
   HEADER_PADDING_TOP,
 } from "../constants/layout";
 import { COUNTRIES } from "../constants/countries";
-import { getRecentContacts, addRecentContact } from "../lib/storage";
+import { getRecentContacts, addRecentContact, getPredefinedMessage, savePredefinedMessage } from "../lib/storage";
 
 const GREEN = "#25D366";
 
@@ -36,6 +37,7 @@ export default function DirectChatScreen() {
   );
   const [showCountries, setShowCountries] = useState(false);
   const [search, setSearch] = useState("");
+  const [predefinedMessage, setPredefinedMessage] = useState("");
   const [recentContacts, setRecentContacts] = useState<
     { id: string; name?: string; phone: string; countryCode: string }[]
   >([]);
@@ -44,8 +46,31 @@ export default function DirectChatScreen() {
     (async () => {
       const contacts = await getRecentContacts();
       setRecentContacts(contacts);
+      const savedMsg = await getPredefinedMessage();
+      setPredefinedMessage(savedMsg);
     })();
   }, []);
+
+  const handleSaveMessage = async () => {
+    await savePredefinedMessage(predefinedMessage);
+    Alert.alert("Success", "Predefined message saved successfully.");
+  };
+
+  const handleClearMessage = async () => {
+    setPredefinedMessage("");
+    await savePredefinedMessage("");
+    Alert.alert("Cleared", "Predefined message cleared.");
+  };
+
+  const formatRelativeTime = (ts?: number) => {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) {
+      return `Today, ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    return d.toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
 
   const filteredCountries = COUNTRIES.filter(
     (c) =>
@@ -57,17 +82,19 @@ export default function DirectChatScreen() {
   const handleOpenChat = useCallback(async () => {
     if (!phone.trim()) return;
     const cleanPhone = phone.replace(/\D/g, "");
-    const url = `https://wa.me/${selectedCountry.dial.replace("+", "")}${cleanPhone}`;
+    const textPart = predefinedMessage.trim() ? `?text=${encodeURIComponent(predefinedMessage.trim())}` : "";
+    const url = `https://wa.me/${selectedCountry.dial.replace("+", "")}${cleanPhone}${textPart}`;
     await Linking.openURL(url);
     await addRecentContact(phone, selectedCountry.dial);
     const updated = await getRecentContacts();
     setRecentContacts(updated);
-  }, [phone, selectedCountry]);
+  }, [phone, selectedCountry, predefinedMessage]);
 
   const handleRecentPress = useCallback(async (contact: (typeof recentContacts)[0]) => {
-    const url = `https://wa.me/${contact.countryCode.replace("+", "")}${contact.phone.replace(/\D/g, "")}`;
+    const textPart = predefinedMessage.trim() ? `?text=${encodeURIComponent(predefinedMessage.trim())}` : "";
+    const url = `https://wa.me/${contact.countryCode.replace("+", "")}${contact.phone.replace(/\D/g, "")}${textPart}`;
     await Linking.openURL(url);
-  }, []);
+  }, [predefinedMessage]);
 
   return (
     <KeyboardAvoidingView
@@ -179,9 +206,58 @@ export default function DirectChatScreen() {
           </View>
         </View>
 
+        {/* ── Predefined Message Card (Optional) ── */}
+        <View style={styles.sectionWrap}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+              PREDEFINED MESSAGE (OPTIONAL)
+            </Text>
+            <TextInput
+              style={[
+                styles.messageInput,
+                {
+                  backgroundColor: colors.muted,
+                  color: colors.foreground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+              placeholder="Enter message to pre-fill in WhatsApp..."
+              placeholderTextColor={colors.mutedForeground}
+              value={predefinedMessage}
+              onChangeText={setPredefinedMessage}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+            
+            <View style={styles.messageActions}>
+              <Pressable
+                style={[styles.saveMessageBtn, { backgroundColor: `${colors.primary}20` }]}
+                onPress={handleSaveMessage}
+              >
+                <Feather name="save" size={14} color={colors.primary} />
+                <Text style={[styles.saveMessageBtnText, { color: colors.primary }]}>
+                  Save Message
+                </Text>
+              </Pressable>
+              {predefinedMessage.trim() !== "" && (
+                <Pressable
+                  style={[styles.clearMessageBtn, { backgroundColor: "rgba(239, 68, 68, 0.12)" }]}
+                  onPress={handleClearMessage}
+                >
+                  <Feather name="trash-2" size={14} color={colors.destructive} />
+                  <Text style={[styles.clearMessageBtnText, { color: colors.destructive }]}>
+                    Clear Saved
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        </View>
+
         {/* Recent contacts */}
         <View style={styles.recentSection}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginBottom: SPACING.md }]}>
             RECENT CONTACTS
           </Text>
           {recentContacts.length === 0 ? (
@@ -190,19 +266,34 @@ export default function DirectChatScreen() {
             recentContacts.map((contact) => (
               <Pressable
                 key={contact.id}
-                style={[
+                style={({ pressed }) => [
                   styles.contactCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
                 ]}
                 onPress={() => handleRecentPress(contact)}
               >
-                <View style={styles.contactInfo}>
-                  <Feather name="user" size={16} color={GREEN} />
-                  <Text style={[styles.contactPhone, { color: colors.foreground }]}>
-                    {contact.countryCode} {contact.phone}
-                  </Text>
+                <View style={styles.contactLeft}>
+                  <View style={[styles.avatarIcon, { backgroundColor: `${GREEN}15` }]}>
+                    <Feather name="user" size={18} color={GREEN} />
+                  </View>
+                  <View style={styles.contactDetails}>
+                    <Text style={[styles.contactPhone, { color: colors.foreground }]}>
+                      {contact.countryCode} {contact.phone}
+                    </Text>
+                    {contact.createdAt ? (
+                      <Text style={[styles.contactTime, { color: colors.mutedForeground }]}>
+                        {formatRelativeTime(contact.createdAt)}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-                <Feather name="external-link" size={16} color={colors.mutedForeground} />
+                <View style={[styles.chatBtn, { backgroundColor: `${GREEN}10` }]}>
+                  <Feather name="message-circle" size={16} color={GREEN} />
+                </View>
               </Pressable>
             ))
           )}
@@ -411,7 +502,7 @@ const styles = StyleSheet.create({
   /* Recents */
   recentSection: {
     paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.xl,
+    marginTop: SPACING.xxxl,
   },
   contactCard: {
     flexDirection: "row",
@@ -422,14 +513,38 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     marginBottom: SPACING.sm,
   },
-  contactInfo: {
+  contactLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.sm,
+    gap: SPACING.md,
+    flex: 1,
+  },
+  avatarIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contactDetails: {
+    flex: 1,
+    gap: 2,
   },
   contactPhone: {
     fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  contactTime: {
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
+  },
+  chatBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* Modal Screen */
@@ -497,6 +612,49 @@ const styles = StyleSheet.create({
   },
   countryDialText: {
     fontSize: 15,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  messageInput: {
+    borderRadius: RADIUS_SM,
+    borderWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    fontSize: 14,
+    fontFamily: "Inter_400Regular",
+    minHeight: 90,
+    marginTop: SPACING.xs,
+  },
+  messageActions: {
+    flexDirection: "row",
+    gap: SPACING.sm,
+    marginTop: SPACING.md,
+  },
+  saveMessageBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 38,
+    borderRadius: RADIUS_SM,
+  },
+  saveMessageBtnText: {
+    fontSize: 13,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  clearMessageBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 38,
+    borderRadius: RADIUS_SM,
+  },
+  clearMessageBtnText: {
+    fontSize: 13,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
   },

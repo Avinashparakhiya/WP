@@ -140,7 +140,19 @@ export default function QrGeneratorScreen() {
   const handleDownloadQR = useCallback(async () => {
     if (!generatedUrl) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
+      let status = "denied";
+      try {
+        const res = await MediaLibrary.requestPermissionsAsync(true);
+        status = res.status;
+      } catch (e) {
+        console.log("Failed to request media permissions in qr-generator:", e);
+        Alert.alert(
+          "Permission Error",
+          "An error occurred while requesting media permissions. Please rebuild your app client."
+        );
+        return;
+      }
+
       if (status !== "granted") {
         Alert.alert(
           "Permission Required",

@@ -17,7 +17,7 @@ import { AiErrorBox } from "../components/AiErrorBox";
 import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
-import { addHistory } from "../lib/storage";
+import { addHistory, toggleFavoriteHistoryItemByText } from "../lib/storage";
 import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 import { SMART_TEMPLATE_CATEGORIES } from "../constants/smartTemplates";
 
@@ -28,12 +28,14 @@ export default function SmartTemplatesScreen() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isFav, setIsFav] = useState(false);
 
   const handleSelectTemplate = async (prompt: string, title: string) => {
     setSelectedTemplate(title);
     setLoading(true);
     setError("");
     setResult("");
+    setIsFav(false);
     try {
       const response = await chat(prompt);
       setResult(response);
@@ -95,11 +97,20 @@ export default function SmartTemplatesScreen() {
         </View>
 
         {/* Category selection */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+        <View style={{ marginBottom: SPACING.xl }}>
+          <Text
+            style={[
+              styles.sectionLabel,
+              { color: colors.mutedForeground, paddingHorizontal: SPACING.lg },
+            ]}
+          >
             SELECT PROFESSION
           </Text>
-          <View style={styles.categoryRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: SPACING.lg, gap: SPACING.sm }}
+          >
             {SMART_TEMPLATE_CATEGORIES.map((cat) => (
               <Pressable
                 key={cat.id}
@@ -126,7 +137,7 @@ export default function SmartTemplatesScreen() {
                 </Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         </View>
 
         {/* Templates for selected category */}
@@ -134,53 +145,78 @@ export default function SmartTemplatesScreen() {
           <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>TEMPLATES</Text>
             {SMART_TEMPLATE_CATEGORIES.find((c) => c.id === selectedCategory)?.templates.map(
-              (tpl, idx) => (
-                <Pressable
-                  key={idx}
-                  style={[
-                    styles.templateCard,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: selectedTemplate === tpl.title ? colors.primary : colors.border,
-                    },
-                  ]}
-                  onPress={() => handleSelectTemplate(tpl.prompt, tpl.title)}
-                  disabled={loading}
-                >
-                  <View style={styles.templateHeader}>
-                    <Feather
-                      name="file-text"
-                      size={18}
-                      color={
-                        selectedTemplate === tpl.title ? colors.primary : colors.mutedForeground
-                      }
-                    />
-                    <Text
+              (tpl, idx) => {
+                const isSelected = selectedTemplate === tpl.title;
+                return (
+                  <View key={idx} style={{ marginBottom: SPACING.md }}>
+                    <Pressable
                       style={[
-                        styles.templateTitle,
+                        styles.templateCard,
                         {
-                          color:
-                            selectedTemplate === tpl.title ? colors.primary : colors.foreground,
+                          backgroundColor: colors.card,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                          marginBottom: 0,
                         },
                       ]}
+                      onPress={() => handleSelectTemplate(tpl.prompt, tpl.title)}
+                      disabled={loading}
                     >
-                      {tpl.title}
-                    </Text>
+                      <View style={styles.templateHeader}>
+                        <Feather
+                          name="file-text"
+                          size={18}
+                          color={
+                            isSelected ? colors.primary : colors.mutedForeground
+                          }
+                        />
+                        <Text
+                          style={[
+                            styles.templateTitle,
+                            {
+                              color:
+                                isSelected ? colors.primary : colors.foreground,
+                            },
+                          ]}
+                        >
+                          {tpl.title}
+                        </Text>
+                      </View>
+                      <Text style={[styles.templatePreview, { color: colors.mutedForeground }]}>
+                        {tpl.prompt.slice(0, 100)}...
+                      </Text>
+                    </Pressable>
+
+                    {isSelected && (
+                      <View style={{ marginTop: SPACING.sm }}>
+                        {loading && (
+                          <View style={styles.inlineLoader}>
+                            <LoadingSpinner size="small" />
+                            <Text style={{ color: colors.mutedForeground, marginLeft: 8, fontSize: 13 }}>
+                              Generating message...
+                            </Text>
+                          </View>
+                        )}
+                        {error && !loading ? (
+                          <AiErrorBox error={error} onDismiss={() => setError("")} />
+                        ) : null}
+                        {result && !loading ? (
+                          <ResultCard
+                            result={result}
+                            isFavorite={isFav}
+                            onToggleFavorite={async () => {
+                              const toggled = await toggleFavoriteHistoryItemByText(result, "Smart Template");
+                              setIsFav(toggled);
+                            }}
+                          />
+                        ) : null}
+                      </View>
+                    )}
                   </View>
-                  <Text style={[styles.templatePreview, { color: colors.mutedForeground }]}>
-                    {tpl.prompt.slice(0, 100)}...
-                  </Text>
-                  {selectedTemplate === tpl.title && loading ? (
-                    <LoadingSpinner size="small" />
-                  ) : null}
-                </Pressable>
-              ),
+                );
+              }
             )}
           </View>
         ) : null}
-
-        {error ? <AiErrorBox error={error} onDismiss={() => setError("")} /> : null}
-        {result ? <ResultCard result={result} /> : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -263,5 +299,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Inter_400Regular",
     lineHeight: 16,
+  },
+  inlineLoader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: SPACING.md,
+    borderRadius: RADIUS,
+    justifyContent: "center",
   },
 });

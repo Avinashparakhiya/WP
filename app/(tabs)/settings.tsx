@@ -204,16 +204,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <SafeAreaInsetsContext.Consumer>
-        {(insets) => (
-          <View style={{ 
-            paddingTop: (insets?.top ?? 0) + 16,
-            backgroundColor: colors.background,
-          }}>
-            <Header title="Settings" />
-          </View>
-        )}
-      </SafeAreaInsetsContext.Consumer>
+      <Header title="Settings" />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -544,6 +535,22 @@ export default function SettingsScreen() {
             <Text style={[styles.aboutLabel, { color: colors.foreground }]}>AI Provider</Text>
             <Text style={[styles.aboutValue, { color: GREEN }]}>{selectedProvider.name}</Text>
           </View>
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push("/history");
+            }}
+            style={({ pressed }) => [
+              styles.aboutRow,
+              {
+                borderBottomColor: colors.border,
+                backgroundColor: pressed ? `${colors.primary}08` : "transparent",
+              },
+            ]}
+          >
+            <Text style={[styles.aboutLabel, { color: colors.foreground }]}>History</Text>
+            <Feather name="chevron-right" size={16} color={colors.mutedForeground} />
+          </Pressable>
           <Pressable
             onPress={() => {
               Haptics.selectionAsync();

@@ -22,7 +22,7 @@ export const CONTENT_BOTTOM_PADDING = Platform.select({
 export const HEADER_PADDING_TOP = Platform.select({
   ios: 16,
   android: 16,
-  web: 67,
+  web: 16,
   default: 16,
 });
 

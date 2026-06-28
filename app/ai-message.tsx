@@ -18,7 +18,7 @@ import { AiErrorBox } from "../components/AiErrorBox";
 import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
-import { addHistory } from "../lib/storage";
+import { addHistory, toggleFavoriteHistoryItemByText } from "../lib/storage";
 import {
   RADIUS,
   RADIUS_SM,
@@ -79,14 +79,18 @@ export default function AiMessageScreen() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [wordCount, setWordCount] = useState("");
+  const [isFav, setIsFav] = useState(false);
 
   const handleGenerate = async () => {
     setLoading(true);
     setError("");
     setResult("");
+    setIsFav(false);
     try {
       const recipientPart = recipient.trim() ? ` The message is for ${recipient.trim()}.` : "";
-      const prompt = `Generate a ${tone.toLowerCase()} WhatsApp message for a ${occasion.toLowerCase()} occasion.${recipientPart} Write in ${language}. Keep it concise, engaging, and suitable for WhatsApp. Just output the message, no explanation or quotation marks.`;
+      const wordLimitPart = wordCount.trim() ? ` Make the message approximately ${wordCount.trim()} words long.` : " Keep it concise, engaging, and suitable for WhatsApp.";
+      const prompt = `Generate a ${tone.toLowerCase()} WhatsApp message for a ${occasion.toLowerCase()} occasion.${recipientPart}${wordLimitPart} Write in ${language}. Just output the message, no explanation or quotation marks.`;
       const response = await chat(prompt);
       setResult(response);
       await addHistory("AI Message", response);
@@ -190,7 +194,30 @@ export default function AiMessageScreen() {
             />
           </View>
         </View>
-
+        {/* ── Word Count ── */}
+        <View style={styles.sectionWrap}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+              MESSAGE LENGTH IN WORDS (OPTIONAL)
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                {
+                  backgroundColor: colors.muted,
+                  color: colors.foreground,
+                  borderColor: colors.inputBorder,
+                },
+              ]}
+              placeholder="e.g. 50, 100, 200..."
+              placeholderTextColor={colors.mutedForeground}
+              value={wordCount}
+              onChangeText={setWordCount}
+              keyboardType="number-pad"
+              autoCorrect={false}
+            />
+          </View>
+        </View>
         {/* ── Tone ── */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -298,7 +325,14 @@ export default function AiMessageScreen() {
         {/* ── Result ── */}
         {result ? (
           <View style={styles.sectionWrap}>
-            <ResultCard result={result} />
+            <ResultCard
+              result={result}
+              isFavorite={isFav}
+              onToggleFavorite={async () => {
+                const toggled = await toggleFavoriteHistoryItemByText(result, "AI Message");
+                setIsFav(toggled);
+              }}
+            />
           </View>
         ) : null}
       </ScrollView>

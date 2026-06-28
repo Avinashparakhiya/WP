@@ -18,7 +18,7 @@ import { AiErrorBox } from "../components/AiErrorBox";
 import { ApiKeyWarning } from "../components/ApiKeyWarning";
 import { useColors } from "../lib/useColors";
 import { chat } from "../lib/openai";
-import { addHistory } from "../lib/storage";
+import { addHistory, toggleFavoriteHistoryItemByText } from "../lib/storage";
 import { RADIUS, SPACING, CONTENT_BOTTOM_PADDING, HEADER_PADDING_TOP } from "../constants/layout";
 
 const BUSINESS_TYPES = [
@@ -37,16 +37,18 @@ export default function AiAssistantScreen() {
   const [result, setResult] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [favoritesMap, setFavoritesMap] = useState<Record<string, boolean>>({});
 
   const handleGenerate = async () => {
     if (!businessType || !prompt.trim()) return;
     setLoading(true);
     setError("");
     setResult("");
+    setFavoritesMap({});
     try {
       const selected = BUSINESS_TYPES.find((b) => b.id === businessType);
       const response = await chat(
-        `Write a professional WhatsApp ${selected?.label.toLowerCase() ?? businessType} message for this scenario: "${prompt.trim()}". Keep it concise, friendly, and suitable for WhatsApp. Just output the message, no explanation.`,
+        `Write 3 different professional WhatsApp ${selected?.label.toLowerCase() ?? businessType} messages for this scenario: "${prompt.trim()}". Number them 1, 2, 3. Keep each variation concise, friendly, and suitable for WhatsApp. Just output the suggestions, no extra introduction or description.`,
       );
       setResult(response);
       await addHistory("AI Assistant", response);
@@ -58,6 +60,23 @@ export default function AiAssistantScreen() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const parseSuggestions = (text: string): string[] => {
+    if (!text) return [];
+    const lines = text.split(/\r?\n/);
+    const suggestions: string[] = [];
+    for (let line of lines) {
+      let trimmed = line.trim();
+      if (!trimmed) continue;
+      trimmed = trimmed.replace(/^[0-9]+[\.\)]\s*/, "");
+      trimmed = trimmed.replace(/^[\-\*]\s*/, "");
+      trimmed = trimmed.replace(/^["']|["']$/g, "").trim();
+      if (trimmed) {
+        suggestions.push(trimmed);
+      }
+    }
+    return suggestions.length > 0 ? suggestions : [text.trim()];
   };
 
   return (
@@ -170,7 +189,29 @@ export default function AiAssistantScreen() {
         </View>
 
         {error ? <AiErrorBox error={error} onDismiss={() => setError("")} /> : null}
-        {result ? <ResultCard result={result} /> : null}
+        
+        {result ? (
+          <View style={{ gap: SPACING.md, marginTop: SPACING.lg, paddingHorizontal: SPACING.lg }}>
+            {parseSuggestions(result).map((suggestion, index) => {
+              const isFavorite = !!favoritesMap[suggestion];
+              return (
+                <View key={index} style={{ gap: 6 }}>
+                  <Text style={[styles.resultBadge, { color: colors.mutedForeground }]}>
+                    REPLY OPTION {index + 1}
+                  </Text>
+                  <ResultCard
+                    result={suggestion}
+                    isFavorite={isFavorite}
+                    onToggleFavorite={async () => {
+                      const toggled = await toggleFavoriteHistoryItemByText(suggestion, "AI Assistant");
+                      setFavoritesMap((prev) => ({ ...prev, [suggestion]: toggled }));
+                    }}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -252,5 +293,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
     color: "#FFFFFF",
+  },
+  resultBadge: {
+    fontSize: 10,
+    fontWeight: "700",
+    fontFamily: "Inter_700Bold",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
   },
 });
