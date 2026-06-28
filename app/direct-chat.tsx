@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Linking,
   Modal,
@@ -59,6 +60,16 @@ export default function DirectChatScreen() {
     setPredefinedMessage("");
     await savePredefinedMessage("");
     Alert.alert("Cleared", "Predefined message cleared.");
+  };
+
+  const formatRelativeTime = (ts?: number) => {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const now = new Date();
+    if (d.toDateString() === now.toDateString()) {
+      return `Today, ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    }
+    return d.toLocaleDateString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   };
 
   const filteredCountries = COUNTRIES.filter(
@@ -246,7 +257,7 @@ export default function DirectChatScreen() {
 
         {/* Recent contacts */}
         <View style={styles.recentSection}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground, marginBottom: SPACING.md }]}>
             RECENT CONTACTS
           </Text>
           {recentContacts.length === 0 ? (
@@ -255,19 +266,34 @@ export default function DirectChatScreen() {
             recentContacts.map((contact) => (
               <Pressable
                 key={contact.id}
-                style={[
+                style={({ pressed }) => [
                   styles.contactCard,
-                  { backgroundColor: colors.card, borderColor: colors.border },
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  },
                 ]}
                 onPress={() => handleRecentPress(contact)}
               >
-                <View style={styles.contactInfo}>
-                  <Feather name="user" size={16} color={GREEN} />
-                  <Text style={[styles.contactPhone, { color: colors.foreground }]}>
-                    {contact.countryCode} {contact.phone}
-                  </Text>
+                <View style={styles.contactLeft}>
+                  <View style={[styles.avatarIcon, { backgroundColor: `${GREEN}15` }]}>
+                    <Feather name="user" size={18} color={GREEN} />
+                  </View>
+                  <View style={styles.contactDetails}>
+                    <Text style={[styles.contactPhone, { color: colors.foreground }]}>
+                      {contact.countryCode} {contact.phone}
+                    </Text>
+                    {contact.createdAt ? (
+                      <Text style={[styles.contactTime, { color: colors.mutedForeground }]}>
+                        {formatRelativeTime(contact.createdAt)}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-                <Feather name="external-link" size={16} color={colors.mutedForeground} />
+                <View style={[styles.chatBtn, { backgroundColor: `${GREEN}10` }]}>
+                  <Feather name="message-circle" size={16} color={GREEN} />
+                </View>
               </Pressable>
             ))
           )}
@@ -476,7 +502,7 @@ const styles = StyleSheet.create({
   /* Recents */
   recentSection: {
     paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.xl,
+    marginTop: SPACING.xxxl,
   },
   contactCard: {
     flexDirection: "row",
@@ -487,14 +513,38 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     marginBottom: SPACING.sm,
   },
-  contactInfo: {
+  contactLeft: {
     flexDirection: "row",
     alignItems: "center",
-    gap: SPACING.sm,
+    gap: SPACING.md,
+    flex: 1,
+  },
+  avatarIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contactDetails: {
+    flex: 1,
+    gap: 2,
   },
   contactPhone: {
     fontSize: 14,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  contactTime: {
+    fontSize: 11,
     fontFamily: "Inter_400Regular",
+  },
+  chatBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   /* Modal Screen */
