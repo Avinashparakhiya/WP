@@ -68,6 +68,8 @@ export default function RootLayout() {
                 <Stack.Screen name="business-templates" />
                 <Stack.Screen name="group-manager" />
                 <Stack.Screen name="voice-message" />
+                <Stack.Screen name="privacy-policy" />
+                <Stack.Screen name="media-downloader" />
                 <Stack.Screen name="+not-found" />
               </Stack>
             </GestureHandlerRootView>

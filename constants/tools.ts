@@ -170,6 +170,14 @@ export const SECTIONS: Section[] = [
         route: "/voice-message",
         category: "content",
       },
+      {
+        id: "media-downloader",
+        title: "Media Downloader",
+        subtitle: "Download status & social videos",
+        icon: "download",
+        route: "/media-downloader",
+        category: "content",
+      },
     ],
   },
 ];
