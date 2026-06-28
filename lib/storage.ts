@@ -269,7 +269,7 @@ export async function toggleFavoriteQuote(quote: string): Promise<boolean> {
 
 export async function getProvider(): Promise<AIProvider> {
   const val = await AsyncStorage.getItem(KEYS.aiProvider);
-  if (val === "gemini" || val === "groq" || val === "openai") return val;
+  if (val === "gemini" || val === "groq") return val;
   return "gemini";
 }
 

@@ -8,14 +8,14 @@ export const RADIUS_FULL = 999;
 export const TAB_BAR_HEIGHT = Platform.select({
   ios: 64,
   android: 64,
-  web: 84,
+  web: 56,
   default: 64,
 });
 
 export const CONTENT_BOTTOM_PADDING = Platform.select({
   ios: TAB_BAR_HEIGHT + 20,
   android: TAB_BAR_HEIGHT + 20,
-  web: TAB_BAR_HEIGHT + 34,
+  web: TAB_BAR_HEIGHT + 16,
   default: TAB_BAR_HEIGHT + 20,
 });
 

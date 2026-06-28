@@ -66,6 +66,14 @@ export default function LinkGeneratorScreen() {
     await addHistory("Link Generator", generatedLink);
   }, [generatedLink]);
 
+  const handlePaste = useCallback(async () => {
+    const text = await Clipboard.getStringAsync();
+    if (text) {
+      setMessage(text);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
@@ -156,9 +164,15 @@ export default function LinkGeneratorScreen() {
         {/* ── Pre-filled Message Card ── */}
         <View style={styles.sectionWrap}>
           <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
-              PRE-FILLED MESSAGE (OPTIONAL)
-            </Text>
+            <View style={styles.labelRow}>
+              <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>
+                PRE-FILLED MESSAGE (OPTIONAL)
+              </Text>
+              <Pressable onPress={handlePaste} style={styles.pasteBtn} hitSlop={8}>
+                <Feather name="clipboard" size={14} color={colors.primary} />
+                <Text style={[styles.pasteBtnText, { color: colors.primary }]}>Paste</Text>
+              </Pressable>
+            </View>
             <TextInput
               style={[
                 styles.messageInput,
@@ -401,6 +415,7 @@ const styles = StyleSheet.create({
   },
   phoneInput: {
     flex: 1,
+    minWidth: 0,
     height: 48,
     borderRadius: RADIUS_SM,
     borderWidth: 1,
@@ -541,6 +556,24 @@ const styles = StyleSheet.create({
   },
   countryDialText: {
     fontSize: 15,
+    fontWeight: "600",
+    fontFamily: "Inter_600SemiBold",
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  pasteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+  },
+  pasteBtnText: {
+    fontSize: 12,
     fontWeight: "600",
     fontFamily: "Inter_600SemiBold",
   },

@@ -13,6 +13,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
         tabBarStyle: {
@@ -20,8 +21,8 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           borderTopWidth: 1,
           height: TAB_BAR_HEIGHT,
-          paddingBottom: isWeb ? CONTENT_BOTTOM_PADDING - TAB_BAR_HEIGHT : 0,
-          paddingTop: 4,
+          paddingBottom: 0,
+          paddingTop: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -29,7 +30,7 @@ export default function TabsLayout() {
           fontFamily: "Inter_500Medium",
         },
         tabBarItemStyle: {
-          paddingVertical: 4,
+          paddingVertical: 0,
         },
       }}
     >
