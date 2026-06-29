@@ -358,6 +358,8 @@ Output ONLY the message text, no quotes or labels.`;
 
   // ── Render ──
 
+  const isSubmitDisabled = contacts.length === 0 || !message.trim();
+
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
@@ -672,15 +674,27 @@ Output ONLY the message text, no quotes or labels.`;
               style={[
                 styles.generateBtn,
                 {
-                  backgroundColor:
-                    contacts.length === 0 || !message.trim() ? colors.muted : GREEN,
+                  backgroundColor: isSubmitDisabled ? colors.border : GREEN,
+                },
+                isSubmitDisabled && {
+                  shadowOpacity: 0,
+                  elevation: 0,
                 },
               ]}
               onPress={handleStartSending}
-              disabled={contacts.length === 0 || !message.trim()}
+              disabled={isSubmitDisabled}
             >
-              <Feather name="send" size={18} color="#FFFFFF" />
-              <Text style={styles.generateBtnText}>
+              <Feather
+                name="send"
+                size={18}
+                color={isSubmitDisabled ? colors.mutedForeground : "#FFFFFF"}
+              />
+              <Text
+                style={[
+                  styles.generateBtnText,
+                  isSubmitDisabled && { color: colors.mutedForeground },
+                ]}
+              >
                 Start Sending ({contacts.length})
               </Text>
             </Pressable>
@@ -1106,6 +1120,7 @@ const styles = StyleSheet.create({
   codeText: { fontSize: 14, fontFamily: "Inter_500Medium" },
   phoneInput: {
     flex: 1,
+    minWidth: 0,
     height: 44,
     borderRadius: RADIUS_SM,
     borderWidth: 1,

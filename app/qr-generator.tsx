@@ -266,6 +266,22 @@ export default function QrGeneratorScreen() {
     }
   }, [generatedUrl]);
 
+  const isSubmitDisabled = (() => {
+    if (qrType === "contact") {
+      return !phone.trim();
+    }
+    if (qrType === "group") {
+      return !groupLink.trim();
+    }
+    if (qrType === "text") {
+      return !customText.trim();
+    }
+    if (qrType === "payment") {
+      return !paymentLink.trim() && !upiId.trim();
+    }
+    return true;
+  })();
+
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
@@ -593,17 +609,27 @@ export default function QrGeneratorScreen() {
             style={[
               styles.generateBtn,
               {
-                backgroundColor: GREEN,
+                backgroundColor: isSubmitDisabled ? colors.border : GREEN,
+              },
+              isSubmitDisabled && {
+                shadowOpacity: 0,
+                elevation: 0,
               },
             ]}
             onPress={handleGenerate}
+            disabled={isSubmitDisabled}
           >
             <Feather
               name={qrType === "payment" ? "credit-card" : "grid"}
               size={18}
-              color="#FFFFFF"
+              color={isSubmitDisabled ? colors.mutedForeground : "#FFFFFF"}
             />
-            <Text style={styles.generateBtnText}>
+            <Text
+              style={[
+                styles.generateBtnText,
+                isSubmitDisabled && { color: colors.mutedForeground },
+              ]}
+            >
               {qrType === "payment" ? "Generate Payment QR" : "Generate QR Code"}
             </Text>
           </Pressable>

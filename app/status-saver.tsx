@@ -12,6 +12,7 @@ import {
   View,
   Modal,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaInsetsContext } from "react-native-safe-area-context";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -72,7 +73,7 @@ export default function StatusSaverScreen() {
   // WhatsApp Status state
   const [statuses, setStatuses] = useState<StatusItem[]>([]);
   const [loadingStatuses, setLoadingStatuses] = useState(false);
-  const [directoryUri, setDirectoryUri] = useState<string | null>(null);
+  const [savedDirectories, setSavedDirectories] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<StatusItem | null>(null);
   const [downloadingPercent, setDownloadingPercent] = useState<number | null>(null);
   const [downloadToast, setDownloadToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -103,15 +104,32 @@ export default function StatusSaverScreen() {
     }
   }, []);
 
+  // Initialize and load saved directory URIs and check media permissions on mount
   useEffect(() => {
     (async () => {
-      if (Platform.OS !== "web" && Platform.OS !== "ios") {
+      if (Platform.OS === "android") {
         try {
+          // Check Media Library permission status
           const { status } = await MediaLibrary.getPermissionsAsync(true);
-          setHasMediaLibraryPermission(status === "granted");
+          const mediaGranted = status === "granted";
+          setHasMediaLibraryPermission(mediaGranted);
+
+          // Check stored SAF directory URIs
+          const saved = await AsyncStorage.getItem("saved_status_directories");
+          let parsedDirs: string[] = [];
+          if (saved) {
+            parsedDirs = JSON.parse(saved) as string[];
+            if (Array.isArray(parsedDirs) && parsedDirs.length > 0) {
+              setSavedDirectories(parsedDirs);
+            }
+          }
+
+          // If either permission is available, load statuses
+          if (parsedDirs.length > 0 || mediaGranted) {
+            await loadStatusesFromDirectories(parsedDirs, mediaGranted);
+          }
         } catch (e) {
-          console.log("Failed to get media permissions on mount:", e);
-          setHasMediaLibraryPermission(false);
+          console.log("Failed to initialize status-saver on mount:", e);
         }
       }
     })();
@@ -126,10 +144,53 @@ export default function StatusSaverScreen() {
     return undefined;
   }, [downloadToast]);
 
+  // Recursively search for .Statuses or Statuses directory in a SAF directory tree
+  const findStatusesFolder = async (dirUri: string): Promise<string[]> => {
+    const results: string[] = [];
+    const decodedDir = decodeURIComponent(dirUri);
+
+    // If the directory itself matches the name pattern
+    if (decodedDir.endsWith("/.Statuses") || decodedDir.endsWith("/Statuses")) {
+      results.push(dirUri);
+      return results;
+    }
+
+    try {
+      const children = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
+      for (const childUri of children) {
+        const decodedChild = decodeURIComponent(childUri);
+        const name = decodedChild.substring(decodedChild.lastIndexOf("/") + 1);
+
+        if (
+          name === ".Statuses" ||
+          name === "Statuses" ||
+          decodedChild.endsWith("/.Statuses") ||
+          decodedChild.endsWith("/Statuses")
+        ) {
+          results.push(childUri);
+        } else {
+          const lowerName = name.toLowerCase();
+          if (
+            lowerName === "whatsapp" ||
+            lowerName === "whatsapp business" ||
+            lowerName === "media" ||
+            lowerName === "com.whatsapp" ||
+            lowerName === "com.whatsapp.w4b"
+          ) {
+            const subResults = await findStatusesFolder(childUri);
+            results.push(...subResults);
+          }
+        }
+      }
+    } catch (err) {
+      // Not a directory or read permissions error
+    }
+    return results;
+  };
+
   // SAF Folder Picker for Android Status folder
   const handleRequestStatusFolder = async () => {
     if (Platform.OS !== "android") {
-      // On web/iOS, SAF is not available — load demo statuses directly
       setStatuses(MOCK_STATUSES);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       return;
@@ -139,14 +200,45 @@ export default function StatusSaverScreen() {
       setLoadingStatuses(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-      // Open the SAF folder picker
+      // Request media permissions first as a quick fallback/grant
+      const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync(true);
+      const mediaGranted = mediaStatus === "granted";
+      setHasMediaLibraryPermission(mediaGranted);
+
+      // Try reading media store statuses first
+      let mediaItems: StatusItem[] = [];
+      if (mediaGranted) {
+        mediaItems = await loadStatusesFromMediaLibrary();
+      }
+
+      if (mediaItems.length > 0) {
+        // If we found statuses directly through Media Library, load them and save permission state
+        setStatuses(mediaItems);
+        setLoadingStatuses(false);
+        return;
+      }
+
+      // Open SAF folder picker
       const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
       if (permissions.granted) {
-        setDirectoryUri(permissions.directoryUri);
-        await loadStatusesFromAndroid(permissions.directoryUri);
+        const uri = permissions.directoryUri;
+
+        // Traverse down the folder to find any WhatsApp or WhatsApp Business status folders
+        const found = await findStatusesFolder(uri);
+        const foldersToSave = found.length > 0 ? found : [uri];
+
+        const updatedDirs = Array.from(new Set([...savedDirectories, ...foldersToSave]));
+        setSavedDirectories(updatedDirs);
+        await AsyncStorage.setItem("saved_status_directories", JSON.stringify(updatedDirs));
+        await loadStatusesFromDirectories(updatedDirs, mediaGranted);
       } else {
-        Alert.alert("Permission Denied", "Folder permission is required to view statuses.");
-        setLoadingStatuses(false);
+        if (mediaGranted) {
+          // Fallback to whatever we got from media library
+          await loadStatusesFromDirectories(savedDirectories, true);
+        } else {
+          Alert.alert("Permission Required", "Folder permission or Media Library access is required to view statuses.");
+          setLoadingStatuses(false);
+        }
       }
     } catch (e) {
       console.error("SAF Folder Permission Error:", e);
@@ -155,43 +247,91 @@ export default function StatusSaverScreen() {
     }
   };
 
-  const loadStatusesFromAndroid = async (dirUri: string) => {
+  // Read statuses from media library metadata
+  const loadStatusesFromMediaLibrary = async (): Promise<StatusItem[]> => {
+    try {
+      const { assets } = await MediaLibrary.getAssetsAsync({
+        mediaType: ["photo", "video"],
+        sortBy: ["creationTime"],
+        first: 150,
+      });
+
+      const items: StatusItem[] = [];
+      for (const asset of assets) {
+        const uri = asset.uri.toLowerCase();
+        // Check if the file path indicates it belongs to WhatsApp statuses
+        if (
+          uri.includes("statuses") ||
+          uri.includes("whatsapp/media/.statuses") ||
+          uri.includes("whatsapp business/media/.statuses")
+        ) {
+          items.push({
+            id: asset.id,
+            uri: asset.uri,
+            type: asset.mediaType === "video" ? "video" : "image",
+            name: asset.filename || `status_${asset.id}`,
+          });
+        }
+      }
+      return items;
+    } catch (e) {
+      console.error("Error reading from MediaLibrary:", e);
+      return [];
+    }
+  };
+
+  const loadStatusesFromDirectories = async (directories: string[], mediaGranted?: boolean) => {
     try {
       setLoadingStatuses(true);
-      const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
       const items: StatusItem[] = [];
 
-      for (const fileUri of files) {
-        const decodedUri = decodeURIComponent(fileUri);
-        const name = decodedUri.substring(decodedUri.lastIndexOf("/") + 1);
+      // 1. Scan selected/persisted SAF folders
+      for (const dirUri of directories) {
+        try {
+          const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(dirUri);
+          for (const fileUri of files) {
+            const decodedUri = decodeURIComponent(fileUri);
+            const name = decodedUri.substring(decodedUri.lastIndexOf("/") + 1);
 
-        if (name.startsWith(".") || name === "") continue;
+            if (name.startsWith(".") || name === "") continue;
 
-        const isImage = /\.(jpe?g|png|webp)$/i.test(name);
-        const isVideo = /\.(mp4|3gp|mkv|webm)$/i.test(name);
+            const isImage = /\.(jpe?g|png|webp)$/i.test(name);
+            const isVideo = /\.(mp4|3gp|mkv|webm)$/i.test(name);
 
-        if (isImage) {
-          items.push({ id: fileUri, uri: fileUri, type: "image", name });
-        } else if (isVideo) {
-          items.push({ id: fileUri, uri: fileUri, type: "video", name });
+            if (isImage) {
+              items.push({ id: fileUri, uri: fileUri, type: "image", name });
+            } else if (isVideo) {
+              items.push({ id: fileUri, uri: fileUri, type: "video", name });
+            }
+          }
+        } catch (err) {
+          console.error(`Error reading directory ${dirUri}:`, err);
+        }
+      }
+
+      // 2. Scan MediaLibrary if permission is active
+      const checkMedia = mediaGranted !== undefined ? mediaGranted : hasMediaLibraryPermission;
+      if (checkMedia) {
+        const mediaItems = await loadStatusesFromMediaLibrary();
+        for (const mItem of mediaItems) {
+          if (!items.some((x) => x.uri === mItem.uri || x.name === mItem.name)) {
+            items.push(mItem);
+          }
         }
       }
 
       setStatuses(items);
-      if (items.length === 0) {
-        Alert.alert("No Statuses Found", "Ensure WhatsApp is installed and you have viewed statuses recently.");
-      }
     } catch (e) {
-      console.error("Error reading statuses:", e);
-      Alert.alert("Error", "Failed to load files from selected directory.");
+      console.error("Error loading statuses:", e);
+      Alert.alert("Error", "Failed to load files.");
     } finally {
       setLoadingStatuses(false);
     }
   };
 
   const handleRefresh = async () => {
-    if (Platform.OS === "android" && directoryUri) {
-      await loadStatusesFromAndroid(directoryUri);
+    if (Platform.OS === "android") {
+      await loadStatusesFromDirectories(savedDirectories);
     } else {
       setStatuses(MOCK_STATUSES);
     }
@@ -335,7 +475,39 @@ export default function StatusSaverScreen() {
               <Feather name="arrow-left" size={22} color={colors.foreground} />
             </Pressable>
             <Text style={[styles.headerTitle, { color: colors.foreground }]}>Status Saver</Text>
-            <View style={{ width: 34 }} />
+            {savedDirectories.length > 0 ? (
+              <Pressable
+                onPress={() => {
+                  Alert.alert(
+                    "Reset Folders",
+                    "Do you want to reset the saved folder permissions?",
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      {
+                        text: "Reset",
+                        style: "destructive",
+                        onPress: async () => {
+                          try {
+                            await AsyncStorage.removeItem("saved_status_directories");
+                            setSavedDirectories([]);
+                            setStatuses([]);
+                            Alert.alert("Reset Complete", "Folder settings cleared.");
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
+                style={styles.backBtn}
+                hitSlop={12}
+              >
+                <Feather name="trash-2" size={18} color="#EF4444" />
+              </Pressable>
+            ) : (
+              <View style={{ width: 34 }} />
+            )}
           </View>
         )}
       </SafeAreaInsetsContext.Consumer>
@@ -365,17 +537,6 @@ export default function StatusSaverScreen() {
           <Text style={[styles.centerSubtitle, { color: colors.mutedForeground }]}>
             To save viewed WhatsApp statuses, grant directory access folder to scan cached media files.
           </Text>
-
-          <View style={[styles.guideBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Text style={[styles.guideTitle, { color: colors.foreground }]}>Android 11+ Setup Guide:</Text>
-            <Text style={[styles.guideStep, { color: colors.mutedForeground }]}>
-              1. View the status first in WhatsApp messenger.{"\n"}
-              2. Tap "Grant Folder Access" below.{"\n"}
-              3. Select directory:{"\n"}
-              <Text style={{ fontWeight: "700" }}>Android/media/com.whatsapp/WhatsApp/Media/.Statuses</Text>{"\n"}
-              4. Tap "Use This Folder" and choose allow.
-            </Text>
-          </View>
 
           <Pressable
             onPress={handleRequestStatusFolder}

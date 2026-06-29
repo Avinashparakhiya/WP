@@ -106,6 +106,8 @@ export default function DirectChatScreen() {
     await Linking.openURL(url);
   }, [predefinedMessage]);
 
+  const isSubmitDisabled = !phone.trim();
+
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
@@ -200,15 +202,26 @@ export default function DirectChatScreen() {
               style={[
                 styles.openBtn,
                 {
-                  backgroundColor: !phone.trim() ? `${GREEN}15` : GREEN,
+                  backgroundColor: isSubmitDisabled ? colors.border : GREEN,
+                },
+                isSubmitDisabled && {
+                  shadowOpacity: 0,
+                  elevation: 0,
                 },
               ]}
               onPress={handleOpenChat}
-              disabled={!phone.trim()}
+              disabled={isSubmitDisabled}
             >
-              <Feather name="send" size={18} color={!phone.trim() ? `${GREEN}80` : "#FFFFFF"} />
+              <Feather
+                name="send"
+                size={18}
+                color={isSubmitDisabled ? colors.mutedForeground : "#FFFFFF"}
+              />
               <Text
-                style={[styles.openBtnText, { color: !phone.trim() ? `${GREEN}80` : "#FFFFFF" }]}
+                style={[
+                  styles.openBtnText,
+                  isSubmitDisabled && { color: colors.mutedForeground },
+                ]}
               >
                 Open WhatsApp
               </Text>

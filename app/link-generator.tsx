@@ -74,6 +74,8 @@ export default function LinkGeneratorScreen() {
     }
   }, []);
 
+  const isSubmitDisabled = !phone.trim();
+
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: colors.background }]}
@@ -199,15 +201,26 @@ export default function LinkGeneratorScreen() {
             style={[
               styles.generateBtn,
               {
-                backgroundColor: !phone.trim() ? `${GREEN}15` : GREEN,
+                backgroundColor: isSubmitDisabled ? colors.border : GREEN,
+              },
+              isSubmitDisabled && {
+                shadowOpacity: 0,
+                elevation: 0,
               },
             ]}
             onPress={handleGenerate}
-            disabled={!phone.trim()}
+            disabled={isSubmitDisabled}
           >
-            <Feather name="link" size={18} color={!phone.trim() ? `${GREEN}80` : "#FFFFFF"} />
+            <Feather
+              name="link"
+              size={18}
+              color={isSubmitDisabled ? colors.mutedForeground : "#FFFFFF"}
+            />
             <Text
-              style={[styles.generateBtnText, { color: !phone.trim() ? `${GREEN}80` : "#FFFFFF" }]}
+              style={[
+                styles.generateBtnText,
+                isSubmitDisabled && { color: colors.mutedForeground },
+              ]}
             >
               Generate Link
             </Text>
